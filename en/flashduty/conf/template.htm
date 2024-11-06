@@ -1,0 +1,451 @@
+<!doctypehtml><meta charset=UTF-8><link rel="alternate" type="application/rss+xml" hreflang="en" href="/en.rss"><link rel=stylesheet href=//registry.npmmirror.com/18x/latest/files/_.css><script src=//registry.npmmirror.com/18x/latest/files/seo.js></script><link rel=alternate href="https://doc.flashduty.com/flashduty/conf/template" hreflang=x-default><link rel=canonical href="https://doc.flashduty.com/flashduty/conf/template"><link rel=stylesheet href=//registry.npmmirror.com/18x/latest/files/seo.css><link rel=alternate hreflang=en href="https://doc.flashduty.com/en/flashduty/conf/template.htm"><link rel=alternate hreflang=zh href="https://doc.flashduty.com/zh/flashduty/conf/template.htm"><title>Configure Notification Template</title><main><article><hr /><h2>brief: By customizing configuration templates, you can meet the need for personalized notification content</h2><h1>Configure Notification Template</h1><h2>What scenarios use templates?</h2><p>When the system <strong>dispatches an incident</strong> , it uses templates to render <a href="#Incident">Incident</a> and trigger notifications. Dispatching may occur in the following scenarios:</p><ol><li>Manually create an incident and dispatch it</li><li>Report an alert event, and the system automatically generates an incident and dispatches it according to the matched dispatch strategy</li><li>After an incident is created, manually change the dispatch, i.e., re-dispatch</li><li>According to the dispatch policy settings, the system automatically upgrades the dispatch</li><li>An incident is closed and reopened, and re-dispatched according to the previous settings</li></ol><p>We use <strong>Golang template syntax</strong> <a href="/0">template/html</a> to parse data, and you can complete any complex rendering requirements.</p><ul><li>Please refer to the Chinese documentation <a href="https://www.topgoer.com/%E5%B8%B8%E7%94%A8%E6%A0%87%E5%87%86%E5%BA%93/template.html#%E6%A8%A1%E6%9D%BF%E8%AF%AD%E6%B3%95">here</a>. It supports logical judgment, loops, pipelines, and common functions;</li><li>We have referenced the open-source library <a href="https://github.com/flashcatcloud/sprig/tree/flashcat">sprig</a>, which includes hundreds of commonly used functions that you can call directly in the template;</li><li>If you wish to introduce more functions, you are welcome to submit a merge request</li></ul><h2>What variables can I reference?</h2><p><strong>Example of referencing variables</strong>:</p><pre><code class="language-i18n">// Reference title
+{{.Title}}
+
+// Reference initiator's name
+{{.Creator.PersonName}}
+
+// Reference resource tag value
+{{.Labels.resource}}
+
+// Reference the tag value with &quot;.&quot; in the name
+{{index .Labels &quot;A.B&quot;}}
+</code></pre><p><strong>Complete list of variables</strong> (direct reference):
+<span id="Incident"></span></p><table><thead><tr><th align="center">Type</th><th align="center">Required</th><th align="center">Description</th><th align="left">Yes</th></tr></thead><tbody><tr><td align="center">ID</td><td align="center">string</td><td align="center">Trigger time, Unix timestamp</td><td align="left">incident ID</td></tr></tbody></table><p><code>Title</code> | string | Trigger time, Unix timestamp | Incident title
+<code>Description</code> | string | Trigger time, Unix timestamp | Incident description, may be empty
+DetailUrl | string | Trigger time, Unix timestamp | Incident details page URL
+Num | string | Trigger time, Unix timestamp | Incident short identifier, used only for visual recognition and may be repeated
+<code>IncidentSeverity</code> | string | Trigger time, Unix timestamp | Yes
+IncidentStatus | string | Trigger time, Unix timestamp | Incident status, enumeration values: Critical, Warning, Info, Ok
+<code>Progress</code> | string | Trigger time, Unix timestamp | Yes
+<code>StartTime</code> | int64 | Trigger time, Unix timestamp | No
+LastTime | int64 | No | Latest event time, the latest event time in the associated alert, Unix timestamp, default is 0
+EndTime | int64 | No | Recovery time, when all associated alerts are recovered, the incident will automatically recover and close. Unix timestamp, default is 0
+SnoozedBefore | int64 | No | Suppression deadline, Unix timestamp, default is 0
+AckTime | int64 | No | First claim time, Unix timestamp, default is 0
+CloseTime | int64 | No | Closing time, end_time is the incident time, close_time is the closing time of the processing progress, Incident it will automatically close during recovery, Incident and manual closing will not affect incident recovery. Unix seconds timestamp, default is 0
+Creator | <a href="#Person">Person</a> | No | Initiator information, does not exist when the system automatically generates it
+Closer | <a href="#Person">Person</a> | No | Closer information, does not exist when the incident automatically recovers
+AssignedTo | <a href="Assignment">Assignment</a> | No | Dispatch configuration
+Responders | []<a href="#Responder">Responder</a> | No | Handler list, initialized according to the dispatch configuration. If a non-assigned person claims the incident, there will also be a corresponding record
+ChannelID | int64 | No | Collaboration space ID, the value is 0 when a global incident is manually created
+ChannelName | string | No | Collaboration space name
+GroupMethod | string | No | Aggregation method, enumeration values: n: no aggregation, p: aggregation by rules, i: intelligent aggregation
+<code>Labels</code> | map[string]string | No | Tags KV, Key and Value are both strings. There is no such information when created manually. When created automatically, it is the label information of the first alert in the aggregation
+AlertCnt | int64 | Trigger time, Unix timestamp | Number of associated alerts
+Alerts | []<a href="#Alert">Alert</a> | No | Associated alert details, there is no such information when manually created
+FireType | string | No | Notification type, enumeration values: fire: notification, refire: circular notification
+IsFlapping | bool | No | Whether it is in a jittering state, i.e., frequent occurrence and recovery, related to the convergence configuration
+Impact | string | No | Incident impact, filled in after the incident is closed
+RootCause | string | No | Incident root cause, filled in after the incident is closed
+Resolution | string | No | Incident solution, filled in after the incident is closed</p><p><span id="Person"></span><strong>Person</strong> (indirect reference):</p><table><thead><tr><th align="center">Type</th><th align="center">Required</th><th align="center">Description</th><th align="left">Yes</th></tr></thead><tbody><tr><td align="center">person_id</td><td align="center">int64</td><td align="center">Trigger time, Unix timestamp</td><td align="left">Yes</td></tr><tr><td align="center">person_name</td><td align="center">string</td><td align="center">Trigger time, Unix timestamp</td><td align="left">Yes</td></tr></tbody></table><p>email | string | Trigger time, Unix timestamp | Email Address</p><p><span id="Assignment"></span><strong>Assignment</strong> (indirect reference):</p><table><thead><tr><th align="center">Type</th><th align="center">Required</th><th align="center">Description</th><th align="left">Yes</th></tr></thead><tbody><tr><td align="center">PersonIDs</td><td align="center">[]string</td><td align="center">No</td><td align="left">No</td></tr><tr><td align="center">EscalateRuleID</td><td align="center">string</td><td align="center">No</td><td align="left">No</td></tr><tr><td align="center">EscalateRuleName</td><td align="center">string</td><td align="center">No</td><td align="left">No</td></tr><tr><td align="center">LayerIdx</td><td align="center">string</td><td align="center">No</td><td align="left">Yes</td></tr><tr><td align="center">Type</td><td align="center">string</td><td align="center">Trigger time, Unix timestamp</td><td align="left">Dispatch type, enumeration value: assign: assign, reassign: reassign, escalate: upgrade assignment, reopen: reopen assignment</td></tr></tbody></table><p><span id="Responder"></span><strong>Responder</strong> (indirect reference):</p><table><thead><tr><th align="center">Type</th><th align="center">Required</th><th align="center">Description</th><th align="left">Yes</th></tr></thead><tbody><tr><td align="center">PersonID</td><td align="center">int64</td><td align="center">Trigger time, Unix timestamp</td><td align="left">Yes</td></tr><tr><td align="center">PersonName</td><td align="center">string</td><td align="center">Trigger time, Unix timestamp</td><td align="left">Yes</td></tr><tr><td align="center">Email</td><td align="center">string</td><td align="center">Trigger time, Unix timestamp</td><td align="left">Email Address</td></tr><tr><td align="center">AssignedAt</td><td align="center">int64</td><td align="center">Trigger time, Unix timestamp</td><td align="left">No</td></tr><tr><td align="center">AcknowledgedAt</td><td align="center">int64</td><td align="center">No</td><td align="left">Claim time, Unix timestamp in seconds, default is 0</td></tr></tbody></table><p><span id="Alert"></span><strong>Alert</strong> (indirect reference):</p><table><thead><tr><th align="center">Type</th><th align="center">Required</th><th align="center">Description</th><th align="left">Yes</th></tr></thead><tbody><tr><td align="center">Title</td><td align="center">string</td><td align="center">Trigger time, Unix timestamp</td><td align="left">Yes</td></tr><tr><td align="center">Description</td><td align="center">string</td><td align="center">Trigger time, Unix timestamp</td><td align="left">Yes</td></tr><tr><td align="center">AlertSeverity</td><td align="center">string</td><td align="center">Trigger time, Unix timestamp</td><td align="left">Yes</td></tr><tr><td align="center">AlertStatus</td><td align="center">string</td><td align="center">Trigger time, Unix timestamp</td><td align="left">Yes</td></tr><tr><td align="center">Progress</td><td align="center">string</td><td align="center">Trigger time, Unix timestamp</td><td align="left">Yes</td></tr><tr><td align="center">StartTime</td><td align="center">int64</td><td align="center">Trigger time, Unix timestamp</td><td align="left">No</td></tr><tr><td align="center">EndTime</td><td align="center">int64</td><td align="center">No</td><td align="left">No</td></tr><tr><td align="center">CloseTime</td><td align="center">int64</td><td align="center">No</td><td align="left">No</td></tr></tbody></table><p><code>Labels</code> | map[string]string | No | Frequently Asked Questions</p><h2>Frequently Asked Questions</h2><ol><li><strong>How do I know what specific tag information <code>Labels</code> has?</strong></li></ol><ul><li>Manually created incidents do not have labels;</li><li>The automatically created incident tag exists, which is the same as the tag of the first alert that was merged. Go to the <strong>incident list</strong> page, find an item incident and view the details incident , and you can see all tag information.</li></ul><ol start="2"><li><strong>Why does the actual content sent use the <strong>default template</strong> even though I configured a custom template for rendering?</strong></li></ol><ul><li>Mock data covers limited scenarios and may not match some of the logical branches in your template. During actual operation, rendering may fail;</li><li>After rendering fails, the system will use the default template to ensure that the message is delivered;</li><li>After rendering fails, the system will use the default template to ensure the message is delivered;</li><li>It is recommended that you use logical judgment to avoid rendering errors when you are unsure if the referenced variable exists, such as the <code>resource</code> tag:</li></ul><pre><code class="language-i18n">// Recommended approach: judge first, then read the tag
+{{.Labels.resource}}
+
+// Recommended practice: judge first, then read the tag
+{{if .Labels.resource}}{{.Labels.resource}}{{end}}
+</code></pre><ol start="3"><li><strong>incident The title contains __ character escapes such as &quot; &gt; &quot; __ ?</strong></li></ol><pre><code class="language-i18n">// Use toHtml function
+{{toHtml .Title}}
+
+// Use the first non-null value for rendering to avoid writing complex if logic
+{{toHtml .Title .TitleEnglish}}
+</code></pre><ol start="4"><li><strong>How do I <strong>convert time format</strong> for time variables, which are all timestamp types?</strong></li></ol><pre><code class="language-i18n">// date function, convert timestamp into readable format
+// &quot;2006-01-02 15:04:05&quot; is a common format; for more formats, please search the internet
+{{date &quot;2006-01-02 15:04:05&quot; .StartTime}}
+
+// ago function, convert the time difference into a readable format
+{{ago .StartTime}}
+</code></pre><ol start="5"><li><strong>How do I reference external variables inside a for loop?</strong></li></ol><pre><code class="language-i18n">// Add &quot; $ &quot; before external variables
+{{range .Responders}}
+{{if eq $.Progress &quot;Triggered&quot;}}
+【Pending】{{.Email}}
+{{end}}
+{{end}}
+</code></pre><ol start="6"><li><strong>How to extract the field value with &quot;.&quot; in the name, such as the information of &quot; obj.instance &quot; in the label?</strong></li></ol><pre><code class="language-i18n">// Use the index function
+{{index .Labels &quot;obj.instance&quot;}}
+</code></pre><ol start="7"><li><strong>How do I extract the information of a label from an incident-associated alert and remove duplicates?</strong></li></ol><pre><code class="language-i18n">// Use the alertLabels function to get the deduplicated array
+{{alertLabels . &quot;resource&quot;}}
+
+// Use the joinAlertLabels function to get the deduplicated array, and then splice it into a string according to &quot;sep&quot;
+{{joinAlertLabels . &quot;resource&quot; &quot;sep&quot;}}
+</code></pre><ol start="8"><li><strong>How do I loop through and print labels?</strong></li></ol><pre><code class="language-i18n">// Exclude a single label
+{{range $k, $v := .Labels}}
+{{$k}} : {{toHtml $v}}
+{{end}}
+
+// Exclude multiple labels
+{{range $k, $v := .Labels}}
+{{if ne $k &quot;resource&quot;}}
+{{$k}} : {{toHtml $v}}
+{{end}}
+{{end}}
+
+// Exclude multiple labels
+{{range $k, $v := .Labels}}
+{{if not (in $k &quot;resource&quot; &quot;body_text&quot;)}}
+{{$k}} : {{toHtml $v}}
+{{end}}
+{{end}}
+
+</code></pre><ol start="9"><li><strong>How can I view more functions and examples of their usage?</strong></li></ol><ul><li>Function list: <a href="https://github.com/flashcatcloud/sprig/blob/master/functions.go#L97">https://github.com/flashcatcloud/sprig/blob/master/functions.go#L97</a></li><li>Usage example: View the corresponding _test.go file, such as date test case see <a href="https://github.com/flashcatcloud/sprig/blob/master/date_test.go">https://github.com/flashcatcloud/sprig/blob/master/date_test.go</a></li></ul><p>Feishu Application</p><h2>Feishu Application</h2><p>You need to pre-configure <strong>the integration center - Instant Messaging -</strong> integration to send message cards. If no custom content is set, the system default template will be used to render all label information:</p><pre><code>{{if .Description}}**description** :{{toHtml .Labels.body_text .Description}}{{end}}
+{{if .Labels.resource}}**resource** : {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{range $k, $v := .Labels}}
+{{if not (in $k &quot;resource&quot; &quot;body_text&quot;)}}**{{$k}}** : {{toHtml $v}}{{end}}{{end}}
+</code></pre><p>As shown below:</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/1.avif" alt="drawing" style="display: block; margin: 0 auto;" width="500"/><p>We have listed some common tags that you can delete as needed;</p><ul><li>Messages can be sent with a length of about 28KB, and an error will be reported if exceeded;</li><li>In the Feishu app, the system will automatically delete empty rendering lines (caused by non-existent tags) for you, so you can configure it with confidence</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}resource: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{if (index .Labels &quot;check&quot;)}}check: {{toHtml (index .Labels &quot;check&quot;)}}{{end}}
+{{if (index .Labels &quot;metric&quot;)}}metric: {{index .Labels &quot;metric&quot;}}{{end}}
+{{if (index .Labels &quot;prom_ql&quot;)}}prom_ql: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;host_ql&quot;)}}host_ql: {{toHtml (index .Labels &quot;host_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;trigger_value&quot;)}}trigger_value: {{index .Labels &quot;trigger_value&quot;}}{{end}}
+{{if (index .Labels &quot;region&quot;)}}region: {{index .Labels &quot;region&quot;}}{{end}}
+{{if (index .Labels &quot;cluster&quot;)}}cluster: {{index .Labels &quot;cluster&quot;}}{{end}}
+{{if (index .Labels &quot;business&quot;)}}business: {{index .Labels &quot;business&quot;}}{{end}}
+{{if (index .Labels &quot;service&quot;)}}service: {{index .Labels &quot;service&quot;}}{{end}}
+{{if (index .Labels &quot;env&quot;)}}env: {{index .Labels &quot;env&quot;}}{{end}}
+{{if (index .Labels &quot;type&quot;)}}type: {{index .Labels &quot;type&quot;}}{{end}}
+{{if (index .Labels &quot;topic&quot;)}}topic: {{index .Labels &quot;topic&quot;}}{{end}}
+{{if (index .Labels &quot;cpu&quot;)}}cpu: {{index .Labels &quot;cpu&quot;}}{{end}}
+{{if (index .Labels &quot;device&quot;)}}device: {{index .Labels &quot;device&quot;}}{{end}}
+{{if (index .Labels &quot;path&quot;)}}path: {{index .Labels &quot;path&quot;}}{{end}}
+{{if (index .Labels &quot;fstype&quot;)}}fstype: {{index .Labels &quot;fstype&quot;}}{{end}}
+{{if (index .Labels &quot;name&quot;)}}name: {{index .Labels &quot;name&quot;}}{{end}}
+{{if (index .Labels &quot;mode&quot;)}}mode: {{index .Labels &quot;mode&quot;}}{{end}}
+{{if (index .Labels &quot;runbook_url&quot;)}}runbook_url: {{toHtml (index .Labels &quot;runbook_url&quot;)}}{{end}}
+</code></pre><h2>DingTalk Application</h2><p>You need to pre-configure <strong>the integration center - Instant Messaging -</strong> integration before you can send message cards. If no custom content is set, the system default template will be used to render all label information:</p><pre><code>{{if .Description}}**description** :{{toHtml .Labels.body_text .Description}}{{end}}
+{{if .Labels.resource}}**resource** : {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{range $k, $v := .Labels}}
+{{if not (in $k &quot;resource&quot; &quot;body_text&quot;)}}**{{$k}}** : {{toHtml $v}}{{end}}{{end}}
+</code></pre><p>As shown below:</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/2.avif" alt="drawing" style="display: block; margin: 0 auto;" width="500"/><p>We have listed some common tags that you can delete as needed;</p><ul><li>Messages can be sent with a length of about 28KB, and an error will be reported if exceeded;</li><li>In the DingTalk app, the system will automatically delete empty rendering lines (caused by non-existent tags) for you, so you can configure it with confidence</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}**resource**: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{if (index .Labels &quot;metric&quot;)}}**metric**: {{index .Labels &quot;metric&quot;}}{{end}}
+{{if (index .Labels &quot;prom_ql&quot;)}}**prom_ql**: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;trigger_value&quot;)}}**trigger_value**: {{index .Labels &quot;trigger_value&quot;}}{{end}}
+{{if (index .Labels &quot;host_ql&quot;)}}**host_ql**: {{toHtml (index .Labels &quot;host_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;region&quot;)}}**region**: {{index .Labels &quot;region&quot;}}{{end}}
+{{if (index .Labels &quot;cluster&quot;)}}**cluster**: {{index .Labels &quot;cluster&quot;}}{{end}}
+{{if (index .Labels &quot;business&quot;)}}**business**: {{index .Labels &quot;business&quot;}}{{end}}
+{{if (index .Labels &quot;service&quot;)}}**service**: {{index .Labels &quot;service&quot;}}{{end}}
+{{if (index .Labels &quot;env&quot;)}}**env**: {{index .Labels &quot;env&quot;}}{{end}}
+{{if (index .Labels &quot;type&quot;)}}**type**: {{index .Labels &quot;type&quot;}}{{end}}
+{{if (index .Labels &quot;topic&quot;)}}**topic**: {{index .Labels &quot;topic&quot;}}{{end}}
+{{if (index .Labels &quot;cpu&quot;)}}**cpu**: {{index .Labels &quot;cpu&quot;}}{{end}}
+{{if (index .Labels &quot;device&quot;)}}**device**: {{index .Labels &quot;device&quot;}}{{end}}
+{{if (index .Labels &quot;path&quot;)}}**path**: {{index .Labels &quot;path&quot;}}{{end}}
+{{if (index .Labels &quot;fstype&quot;)}}**fstype**: {{index .Labels &quot;fstype&quot;}}{{end}}
+{{if (index .Labels &quot;name&quot;)}}**name**: {{index .Labels &quot;name&quot;}}{{end}}
+{{if (index .Labels &quot;mode&quot;)}}**mode**: {{index .Labels &quot;mode&quot;}}{{end}}
+{{if (index .Labels &quot;runbook_url&quot;)}}**runbook_url**: {{index .Labels &quot;runbook_url&quot;}}{{end}}
+</code></pre><h2>Enterprise WeChat Application</h2><p>You need to pre-configure <strong>the integration center - Instant Messaging - EnterpriseWeChat</strong> integration to send message cards. If no custom content is set, the system default template will be used and only common tag information will be rendered:</p><ul><li>Messages can be sent with a length of about 28KB, and an error will be reported if exceeded;</li><li>In the Enterprise WeChat app, the system will automatically delete empty rendering lines (caused by non-existent tags) for you, so you can configure it with confidence</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}resource: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{if (index .Labels &quot;metric&quot;)}}metric: {{index .Labels &quot;metric&quot;}}{{end}}
+{{if (index .Labels &quot;prom_ql&quot;)}}prom_ql: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;trigger_value&quot;)}}trigger_value: {{index .Labels &quot;trigger_value&quot;}}{{end}}
+{{if (index .Labels &quot;host_ql&quot;)}}host_ql: {{toHtml (index .Labels &quot;host_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;region&quot;)}}region: {{index .Labels &quot;region&quot;}}{{end}}
+{{if (index .Labels &quot;cluster&quot;)}}cluster: {{index .Labels &quot;cluster&quot;}}{{end}}
+{{if (index .Labels &quot;business&quot;)}}business: {{index .Labels &quot;business&quot;}}{{end}}
+{{if (index .Labels &quot;service&quot;)}}service: {{index .Labels &quot;service&quot;}}{{end}}
+{{if (index .Labels &quot;env&quot;)}}env: {{index .Labels &quot;env&quot;}}{{end}}
+{{if (index .Labels &quot;type&quot;)}}type: {{index .Labels &quot;type&quot;}}{{end}}
+{{if (index .Labels &quot;topic&quot;)}}topic: {{index .Labels &quot;topic&quot;}}{{end}}
+{{if (index .Labels &quot;cpu&quot;)}}cpu: {{index .Labels &quot;cpu&quot;}}{{end}}
+{{if (index .Labels &quot;device&quot;)}}device: {{index .Labels &quot;device&quot;}}{{end}}
+{{if (index .Labels &quot;path&quot;)}}path: {{index .Labels &quot;path&quot;}}{{end}}
+{{if (index .Labels &quot;fstype&quot;)}}fstype: {{index .Labels &quot;fstype&quot;}}{{end}}
+{{if (index .Labels &quot;name&quot;)}}name: {{index .Labels &quot;name&quot;}}{{end}}
+{{if (index .Labels &quot;mode&quot;)}}mode: {{index .Labels &quot;mode&quot;}}{{end}}
+{{if (index .Labels &quot;runbook_url&quot;)}}runbook_url: {{toHtml (index .Labels &quot;runbook_url&quot;)}}{{end}}
+</code></pre><p>As shown below:</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/3.avif" alt="drawing" style="display: block; margin: 0 auto;" width="500"/><p><strong>Note: Enterprise WeChat limits the card length. In the template rendering area, you can render no more than 8 lines of content, and any part exceeding 8 lines will be hidden.</strong></p><h2>Slack Application</h2><p>You need to pre-configure <strong>the Integration Center - IM - Slack integration before</strong> you can send message cards. If no custom content is set, the system default template will be used and only common tag information will be rendered:</p><pre><code>{{if .Description}}*description* :{{toHtml .Labels.body_text .Description}}{{end}}
+{{if .Labels.resource}}*resource* : {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{range $k, $v := .Labels}}
+{{if not (in $k &quot;resource&quot; &quot;body_text&quot;)}}*{{$k}}* : {{toHtml $v}}{{end}}{{end}}
+</code></pre><p>As shown below:</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/4.avif" alt="drawing" style="display: block; margin: 0 auto;" width="600"/><p>We have listed some common tags that you can delete as needed;</p><ul><li>Messages can be sent with a length of about 28KB, and an error will be reported if exceeded;</li><li>Messages can be up to about 15,000 characters long, and will be truncated if exceeded;</li><li>In the Slack app, the system will automatically delete empty rendering lines (caused by non-existent tags) for you, so you can configure it with confidence</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}*resource*: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{if (index .Labels &quot;metric&quot;)}}*metric*: {{index .Labels &quot;metric&quot;}}{{end}}
+{{if (index .Labels &quot;prom_ql&quot;)}}*prom_ql*: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;trigger_value&quot;)}}*trigger_value*: {{index .Labels &quot;trigger_value&quot;}}{{end}}
+{{if (index .Labels &quot;host_ql&quot;)}}*host_ql*: {{index .Labels &quot;host_ql&quot;}}{{end}}
+{{if (index .Labels &quot;region&quot;)}}*region*: {{index .Labels &quot;region&quot;}}{{end}}
+{{if (index .Labels &quot;cluster&quot;)}}*cluster*: {{index .Labels &quot;cluster&quot;}}{{end}}
+{{if (index .Labels &quot;business&quot;)}}*business*: {{index .Labels &quot;business&quot;}}{{end}}
+{{if (index .Labels &quot;service&quot;)}}*service*: {{index .Labels &quot;service&quot;}}{{end}}
+{{if (index .Labels &quot;env&quot;)}}*env*: {{index .Labels &quot;env&quot;}}{{end}}
+{{if (index .Labels &quot;type&quot;)}}*type*: {{index .Labels &quot;type&quot;}}{{end}}
+{{if (index .Labels &quot;topic&quot;)}}*topic*: {{index .Labels &quot;topic&quot;}}{{end}}
+{{if (index .Labels &quot;cpu&quot;)}}*cpu*: {{index .Labels &quot;cpu&quot;}}{{end}}
+{{if (index .Labels &quot;device&quot;)}}*device*: {{index .Labels &quot;device&quot;}}{{end}}
+{{if (index .Labels &quot;path&quot;)}}*path*: {{index .Labels &quot;path&quot;}}{{end}}
+{{if (index .Labels &quot;fstype&quot;)}}*fstype*: {{index .Labels &quot;fstype&quot;}}{{end}}
+{{if (index .Labels &quot;name&quot;)}}*name*: {{index .Labels &quot;name&quot;}}{{end}}
+{{if (index .Labels &quot;mode&quot;)}}*mode*: {{index .Labels &quot;mode&quot;}}{{end}}
+{{if (index .Labels &quot;runbook_url&quot;)}}*runbook_url*: {{index .Labels &quot;runbook_url&quot;}}{{end}}
+</code></pre><h2>Microsoft Teams Application</h2><p>You need to pre-configure <strong>the Integration Center - IM - Microsoft Teams integration before</strong> you can send message cards. If no custom content is set, the system default template will be used and only common tag information will be rendered:</p><pre><code>{{if .Description}}**description** :{{toHtml .Labels.body_text .Description}}{{end}}
+{{if .Labels.resource}}**resource** : {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{range $k, $v := .Labels}}
+{{if not (in $k &quot;resource&quot; &quot;body_text&quot; &quot;body_text_with_table&quot;)}}**{{$k}}** : {{toHtml $v}}{{end}}{{end}}
+</code></pre><p>As shown below:</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/5.avif" alt="drawing" style="display: block; margin: 0 auto;" width="300"/><p>We have listed some common tags that you can delete as needed;</p><ul><li>Messages can be sent with a length of about 28KB, and an error will be reported if exceeded;</li><li>Messages can be up to about 28KB in length, and an error will be reported if exceeded;</li><li>In the Microsoft Teams app, the system will automatically delete empty rendering lines (caused by non-existent tags) for you, so you can configure it with confidence</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}**resource**: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{if (index .Labels &quot;metric&quot;)}}**metric**: {{index .Labels &quot;metric&quot;}}{{end}}
+{{if (index .Labels &quot;prom_ql&quot;)}}**prom_ql**: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;trigger_value&quot;)}}**trigger_value**: {{index .Labels &quot;trigger_value&quot;}}{{end}}
+{{if (index .Labels &quot;host_ql&quot;)}}**host_ql**: {{index .Labels &quot;host_ql&quot;}}{{end}}
+{{if (index .Labels &quot;region&quot;)}}**region**: {{index .Labels &quot;region&quot;}}{{end}}
+{{if (index .Labels &quot;cluster&quot;)}}**cluster**: {{index .Labels &quot;cluster&quot;}}{{end}}
+{{if (index .Labels &quot;business&quot;)}}**business**: {{index .Labels &quot;business&quot;}}{{end}}
+{{if (index .Labels &quot;service&quot;)}}**service**: {{index .Labels &quot;service&quot;}}{{end}}
+{{if (index .Labels &quot;env&quot;)}}**env**: {{index .Labels &quot;env&quot;}}{{end}}
+{{if (index .Labels &quot;type&quot;)}}**type**: {{index .Labels &quot;type&quot;}}{{end}}
+{{if (index .Labels &quot;topic&quot;)}}**topic**: {{index .Labels &quot;topic&quot;}}{{end}}
+{{if (index .Labels &quot;cpu&quot;)}}**cpu**: {{index .Labels &quot;cpu&quot;}}{{end}}
+{{if (index .Labels &quot;device&quot;)}}**device**: {{index .Labels &quot;device&quot;}}{{end}}
+{{if (index .Labels &quot;path&quot;)}}**path**: {{index .Labels &quot;path&quot;}}{{end}}
+{{if (index .Labels &quot;fstype&quot;)}}**fstype**: {{index .Labels &quot;fstype&quot;}}{{end}}
+{{if (index .Labels &quot;name&quot;)}}**name**: {{index .Labels &quot;name&quot;}}{{end}}
+{{if (index .Labels &quot;mode&quot;)}}**mode**: {{index .Labels &quot;mode&quot;}}{{end}}
+{{if (index .Labels &quot;runbook_url&quot;)}}**runbook_url**: {{index .Labels &quot;runbook_url&quot;}}{{end}}
+</code></pre><h2>Microsoft Teams Application</h2><p>You need to pre-configure <strong>the Integration Center - IM - Microsoft Teams integration before</strong> you can send message cards. If no custom content is set, the system default template will be used and only common tag information will be rendered:</p><pre><code>{{if .Description}}**description** :{{toHtml .Labels.body_text .Description}}{{end}}
+{{if .Labels.resource}}**resource** : {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{range $k, $v := .Labels}}
+{{if not (in $k &quot;resource&quot; &quot;body_text&quot; &quot;body_text_with_table&quot;)}}**{{$k}}** : {{toHtml $v}}{{end}}{{end}}
+</code></pre><p>As shown below:</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/5.avif" alt="drawing" style="display: block; margin: 0 auto;" width="300"/><p>We have listed some common tags that you can delete as needed;</p><ul><li>Messages can be sent with a length of about 28KB, and an error will be reported if exceeded;</li><li>Messages can be up to about 28KB in length, and an error will be reported if exceeded;</li><li>In the Microsoft Teams app, the system will automatically delete empty rendering lines (caused by non-existent tags) for you, so you can configure it with confidence</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}**resource**: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{if (index .Labels &quot;metric&quot;)}}**metric**: {{index .Labels &quot;metric&quot;}}{{end}}
+{{if (index .Labels &quot;prom_ql&quot;)}}**prom_ql**: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;trigger_value&quot;)}}**trigger_value**: {{index .Labels &quot;trigger_value&quot;}}{{end}}
+{{if (index .Labels &quot;host_ql&quot;)}}**host_ql**: {{index .Labels &quot;host_ql&quot;}}{{end}}
+{{if (index .Labels &quot;region&quot;)}}**region**: {{index .Labels &quot;region&quot;}}{{end}}
+{{if (index .Labels &quot;cluster&quot;)}}**cluster**: {{index .Labels &quot;cluster&quot;}}{{end}}
+{{if (index .Labels &quot;business&quot;)}}**business**: {{index .Labels &quot;business&quot;}}{{end}}
+{{if (index .Labels &quot;service&quot;)}}**service**: {{index .Labels &quot;service&quot;}}{{end}}
+{{if (index .Labels &quot;env&quot;)}}**env**: {{index .Labels &quot;env&quot;}}{{end}}
+{{if (index .Labels &quot;type&quot;)}}**type**: {{index .Labels &quot;type&quot;}}{{end}}
+{{if (index .Labels &quot;topic&quot;)}}**topic**: {{index .Labels &quot;topic&quot;}}{{end}}
+{{if (index .Labels &quot;cpu&quot;)}}**cpu**: {{index .Labels &quot;cpu&quot;}}{{end}}
+{{if (index .Labels &quot;device&quot;)}}**device**: {{index .Labels &quot;device&quot;}}{{end}}
+{{if (index .Labels &quot;path&quot;)}}**path**: {{index .Labels &quot;path&quot;}}{{end}}
+{{if (index .Labels &quot;fstype&quot;)}}**fstype**: {{index .Labels &quot;fstype&quot;}}{{end}}
+{{if (index .Labels &quot;name&quot;)}}**name**: {{index .Labels &quot;name&quot;}}{{end}}
+{{if (index .Labels &quot;mode&quot;)}}**mode**: {{index .Labels &quot;mode&quot;}}{{end}}
+{{if (index .Labels &quot;runbook_url&quot;)}}**runbook_url**: {{index .Labels &quot;runbook_url&quot;}}{{end}}
+</code></pre><h2>Feishu Robot only supports sending plain text messages</h2><p>Feishu Robot only supports sending plain text messages.</p><ul><li>The message <strong>has a maximum length of 4000 bytes, and any excess will be truncated and sent</strong> ;</li><li>If the text contains <code>&lt;br&gt;</code> , it will <strong>first delete blank lines, and then replace <code>&lt;br&gt;</code> with a newline character</strong> ;</li><li>If you do not set custom content, the system default template will be used, displaying only key information:</li></ul><pre><code class="language-i18n">{{fireReason .}}INC #{{.Num}} {{toHtml .Title}}
+-----
+Collaborative Space: {{if .ChannelName}}{{.ChannelName}}{{else}}None{{end}}
+Severity: {{.IncidentSeverity}}
+Trigger Time: {{date &quot;2006-01-02 15:04:05&quot; .StartTime}}
+Duration: {{ago .StartTime}}{{if gt .AlertCnt 1}}
+Aggregated Alerts: {{.AlertCnt}}Count{{end}}{{if .Labels.resource}}
+Alert Object: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}{{if .Description}}
+Fault Description: {{toHtml .Description}}{{end}}{{if gt (len .Responders) 0}}
+Assigned Personnel: {{range .Responders}}@{{.PersonName}} {{end}}{{end}}
+&lt;br&gt;Details: {{.DetailUrl}}
+</code></pre><h2>DingTalk Robot</h2><p>DingTalk Robot only supports sending Markdown messages (<a href="https://open.dingtalk.com/document/robots/custom-robot-access#title-7ur-3ok-s1a">syntax restrictions</a>).</p><ul><li>The message <strong>has a maximum length of 4000 bytes, and any excess will be truncated and sent</strong> ;</li><li>If the text contains <code>&lt;br&gt;</code> , it will <strong>first delete blank lines, and then replace <code>&lt;br&gt;</code> with a newline character</strong> ;</li><li>If you do not set custom content, the system default template will be used, displaying only key information:</li></ul><pre><code class="language-i18n">{{fireReason .}}INC [#{{.Num}}]({{.DetailUrl}}) {{toHtml .Title}}
+
+- Collaborative Space: {{if .ChannelName}}{{.ChannelName}}{{else}}None{{end}}
+- Severity: {{$s := colorSeverity .IncidentSeverity}}{{toHtml $s}}
+- Trigger Time: {{date &quot;2006-01-02 15:04:05&quot; .StartTime}}
+- Duration: {{ago .StartTime}}{{if gt .AlertCnt 1}}
+- Aggregated Alerts: {{.AlertCnt}}Count{{end}}{{if .Labels.resource}}
+- Alert Object: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}{{if .Description}}
+- Fault Description: {{toHtml .Description}}{{end}}{{if gt (len .Responders) 0}}
+- Assigned Personnel: {{range .Responders}}@{{.PersonName}} {{end}}{{end}}
+&lt;br&gt;[Details]({{.DetailUrl}})|[Claim]({{.DetailUrl}}?ack=1)
+</code></pre><h2>Enterprise WeChat Robot</h2><p>The QiWei Robot only supports sending Markdown messages (<a href="https://developer.work.weixin.qq.com/document/path/91770#markdown%E7%B1%BB%E5%9E%8B">syntax limitations</a>).</p><ul><li>The message <strong>has a maximum length of 4000 bytes, and any excess will be truncated and sent</strong> ;</li><li>If the text contains <code>&lt;br&gt;</code> , it will <strong>first delete blank lines, and then replace <code>&lt;br&gt;</code> with a newline character</strong> ;</li><li>If you do not set custom content, the system default template will be used, displaying only key information:</li></ul><pre><code class="language-i18n">{{fireReason .}}**INC [#{{.Num}}]({{.DetailUrl}}) {{toHtml .Title}}**
+&gt; Collaborative Space: &lt;font color=&quot;warning&quot;&gt;{{if .ChannelName}}{{.ChannelName}}{{else}}None{{end}}&lt;/font&gt;
+&gt; Severity: &lt;font color=&quot;warning&quot;&gt;{{.IncidentSeverity}}&lt;/font&gt;
+&gt; Trigger Time: {{date &quot;2006-01-02 15:04:05&quot; .StartTime}}
+&gt; Duration: {{ago .StartTime}}{{if gt .AlertCnt 1}}
+&gt; Aggregated Alerts: {{.AlertCnt}}Count{{end}}{{if .Labels.resource}}
+&gt; Alert Object: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}{{if .Description}}
+&gt; Fault Description: {{toHtml .Description}}{{end}}{{if gt (len .Responders) 0}}
+&gt; Assigned Personnel: {{range .Responders}}@{{.PersonName}} {{end}}{{end}}
+&lt;br&gt;[Details]({{.DetailUrl}})|[Claim]({{.DetailUrl}}?ack=1)
+</code></pre><h2>Telegram Bot</h2><ul><li>Configure a Telegram service address that can be accessed domestically;</li><li>The message <strong>has a maximum length of 4096 characters, and will not be sent if it exceeds this limit</strong> ;</li><li>If the text contains <code>&lt;br&gt;</code> , it will <strong>first delete blank lines, and then replace <code>&lt;br&gt;</code> with a newline character</strong> ;</li><li>If you do not set custom content, the system default template will be used, displaying only key information:</li></ul><pre><code class="language-i18n">{{fireReason .}}INC [#{{.Num}}]({{.DetailUrl}}) {{toHtml .Title}}
+-----
+Collaborative Space: {{if .ChannelName}}{{.ChannelName}}{{else}}None{{end}}
+Severity: {{.IncidentSeverity}}
+Trigger Time: {{date &quot;2006-01-02 15:04:05&quot; .StartTime}}
+Duration: {{ago .StartTime}}{{if gt .AlertCnt 1}}
+Aggregated Alerts: {{.AlertCnt}}Count{{end}}{{if .Labels.resource}}
+Alert Object: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}({{.Labels.resource}}){{end}}{{if .Description}}
+Fault Description: {{toHtml .Description}}{{end}}{{if gt (len .Responders) 0}}
+Assigned Personnel: {{range .Responders}}@{{.PersonName}} {{end}}{{end}}
+
+&lt;br&gt;[Details]({{.DetailUrl}})|[Claim]({{.DetailUrl}}?ack=1)
+</code></pre><h2>Slack Bot</h2><ul><li>The message <strong>can be up to 15000 characters, and any excess will be truncated and sent</strong> ;</li><li>If the text contains <code>&lt;br&gt;</code> , it will <strong>first delete blank lines, and then replace <code>&lt;br&gt;</code> with a newline character</strong> ;</li><li>If you do not set custom content, the system default template will be used, displaying only key information:</li></ul><pre><code class="language-i18n">{{fireReason .}}INC &lt;{{.DetailUrl}}|#{{.Num}}&gt; {{toHtml .Title}}
+-----
+Collaborative Space: {{if .ChannelName}}{{.ChannelName}}{{else}}None{{end}}
+Severity: {{.IncidentSeverity}}
+Trigger Time: {{date &quot;2006-01-02 15:04:05&quot; .StartTime}}
+Duration: {{ago .StartTime}}{{if gt .AlertCnt 1}}
+Aggregated Alerts: {{.AlertCnt}}Count{{end}}{{if .Labels.resource}}
+Alert Object: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}{{if .Description}}
+Fault Description: {{toHtml .Description}}{{end}}{{if gt (len .Responders) 0}}
+Assigned Personnel: {{range .Responders}}@{{.PersonName}} {{end}}{{end}}
+-----
+&lt;br&gt;&lt;{{.DetailUrl}}|Details&gt;|&lt;{{.DetailUrl}}?ack=1|Claim&gt;
+</code></pre><h2>Zoom Bot</h2><ul><li>The message <strong>can be up to 4000 characters, and any excess will be truncated and sent</strong> ;</li><li>If the text contains <code>&lt;br&gt;</code> , it will <strong>first delete blank lines, and then replace <code>&lt;br&gt;</code> with a newline character</strong> ;</li><li>The message format <strong>follows the Zoom message format</strong> . The current robot application does not support Markdown . For other formats, please refer to the official website : <a href="https://developers.zoom.us/docs/team-chat-apps/customizing-messages/">https://developers.zoom.us/docs/team-chat-apps/customizing-messages/</a></li><li>If you do not set custom content, the system default template will be used, displaying only key information:</li></ul><pre><code class="language-i18n">{&quot;head&quot;: {
+&quot;text&quot;: &quot;{{fireReason .}}INC [#{{.Num}}] {{toHtml .Title}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: true,
+&quot;italic&quot;: false,
+&quot;color&quot;: &quot;{{$s := serverityToColor .IncidentSeverity}}{{toHtml $s}}&quot;
+}
+},
+&quot;body&quot;: [
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;Collaborative Space: {{if .ChannelName}}{{.ChannelName}}{{else}}None{{end}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: false,
+&quot;italic&quot;: false
+}
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;Severity: {{.IncidentSeverity}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: false,
+&quot;italic&quot;: false,
+&quot;color&quot;: &quot;{{$s := serverityToColor .IncidentSeverity}}{{toHtml $s}}&quot;
+}
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;Duration: {{ago .StartTime}}{{if gt .AlertCnt 1}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: false,
+&quot;italic&quot;: false
+}
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;Aggregated Alerts: {{.AlertCnt}}Count{{end}}{{if .Labels.resource}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: false,
+&quot;italic&quot;: false
+}
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;Alert Object: {{.Labels.resource}}{{end}}{{if .Description}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: false,
+&quot;italic&quot;: false
+}
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;Fault Description: {{toHtml .Description}}{{end}}{{if gt (len .Responders) 0}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: false,
+&quot;italic&quot;: false
+}
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;Assigned Personnel: {{range .Responders}}@{{.PersonName}}{{end}}{{end}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: false,
+&quot;italic&quot;: false
+}
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;View Details
+&quot;link&quot;: &quot;{{.DetailUrl}}{{if .IsFlapping}}&quot;
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;Notice: The current fault status changes frequently, and notifications will be converged{{.Flapping.MuteMinutes}}Minutes. It is recommended that you optimize your alert strategy.{{end}}{{if .IsInStorm}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: true,
+&quot;italic&quot;: false
+}
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;Notice: The current faults have been aggregated{{.AlertCnt}}Count of alerts, triggering an alert storm. Please handle it urgently!{{end}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: true,
+&quot;italic&quot;: false
+}
+}
+]
+}
+</code></pre><h2>SMS</h2><p>If you do not set custom content, the system default template will be used to render the notification:</p><pre><code>您有故障待处理: {{toHtml .Title}}, 协作空间: {{.ChannelName}}, 等级: {{.IncidentSeverity}}{{if gt .AlertCnt 1}}, 共聚合{{.AlertCnt}}条告警{{end}}
+</code></pre><h2>Email</h2><p>If you do not set custom content, the system default template will be used to render the notification:</p><pre><code class="language-i18n">&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot; /&gt;
+&lt;title&gt;{{.Title}}&lt;/title&gt;
+&lt;html lang=&quot;zh&quot;&gt;
+
+&lt;head data-id=&quot;__react-email-head&quot;&gt;
+&lt;style&gt;
+.bg-Critical { background-color: #C80000; }
+.bg-Warning { background-color: #FA7D00; }
+.bg-Info { background-color: #FABE00; }
+.bg-Ok { background-color: rgb(132 204 22); }
+.text-Critical { color: #C80000; }
+.text-Warning { color: #FA7D00; }
+.text-Info { color: #FABE00; }
+.text-Ok { color: rgb(132 204 22); }
+.text-title {font-weight:500;width:6rem;flex-shrink:0}
+.text-content {color:rgb(55,65,81)}
+&lt;/style&gt;
+&lt;/head&gt;
+
+&lt;body data-id=&quot;__react-email-body&quot; style=&quot;background-color:rgb(255,255,255);border-radius:0.25rem;margin-top:2.5rem;margin-bottom:2.5rem;margin-left:auto;margin-right:auto;padding:1rem;min-width:400px;max-width:660px;font-family:ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji&quot;&gt;
+&lt;div style=&quot;width:100%;height:0.375rem;margin-bottom:2rem&quot; class=&quot;bg-{{.IncidentSeverity}}&quot;&gt;&lt;/div&gt;
+&lt;div style=&quot;display:flex;align-items:center;margin-bottom:1.5rem&quot;&gt;
+&lt;div style=&quot;display:flex;align-items:flex-end;gap:1rem&quot;&gt;&lt;img witdh=&quot;120&quot; data-id=&quot;react-email-img&quot; src=&quot;https://fcimg.3ti.site/zh/flashduty/conf/template/6.avif&quot; height=&quot;40&quot; style=&quot;display:block;outline:none;border:none;text-decoration:none&quot; /&gt;&lt;span style=&quot;font-size:1.25rem;line-height:1.75rem;font-weight:600&quot;&gt;You have a pending issue to handle&lt;/span&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div style=&quot;background-color:rgb(243,244,246);padding:2rem;margin-top:1rem;border-radius:0.5rem&quot;&gt;
+&lt;div style=&quot;display:flex;flex-direction:column;gap:0.75rem&quot;&gt;
+&lt;div style=&quot;display:flex&quot;&gt;
+&lt;div class=&quot;text-title&quot;&gt;Fault Title&lt;/div&gt;
+&lt;div class=&quot;text-content&quot;&gt;{{.Title}}&lt;/div&gt;
+&lt;/div&gt;
+&lt;div style=&quot;display:flex&quot;&gt;
+&lt;div class=&quot;text-title&quot;&gt;Severity&lt;/div&gt;
+&lt;div class=&quot;text-{{.IncidentSeverity}}&quot;&gt;{{.IncidentSeverity}}&lt;/div&gt;
+&lt;/div&gt;
+&lt;div style=&quot;display:flex&quot;&gt;
+&lt;div class=&quot;text-title&quot;&gt;Collaborative Space&lt;/div&gt;
+&lt;div class=&quot;text-content&quot;&gt;{{if .ChannelName}}{{.ChannelName}}{{else}}None{{end}}&lt;/div&gt;
+&lt;/div&gt;
+&lt;div style=&quot;display:flex&quot;&gt;
+&lt;div class=&quot;text-title&quot;&gt;Trigger Time&lt;/div&gt;
+&lt;div class=&quot;text-content&quot;&gt;{{date &quot;2006-01-02 15:04:05&quot; .StartTime}}&lt;/div&gt;
+&lt;/div&gt;
+{{if .CreatorID}}
+&lt;div style=&quot;display:flex&quot;&gt;
+&lt;div class=&quot;text-title&quot;&gt;Initiator&lt;/div&gt;
+&lt;div class=&quot;text-content&quot;&gt;{{.Creator.PersonName}}&lt;/div&gt;
+&lt;/div&gt;
+{{end}}
+{{if gt (len .Responders) 0}}
+&lt;div style=&quot;display:flex&quot;&gt;
+&lt;div class=&quot;text-title&quot;&gt;Assigned Personnel&lt;/div&gt;
+&lt;div class=&quot;text-content&quot;&gt;{{range .Responders}}@{{.PersonName}} {{end}}&lt;/div&gt;
+&lt;/div&gt;
+{{end}}
+&lt;div style=&quot;display:flex&quot;&gt;
+&lt;div class=&quot;text-title&quot;&gt;Processing Progress&lt;/div&gt;
+&lt;div class=&quot;text-content&quot;&gt;{{.Progress}}&lt;/div&gt;
+&lt;/div&gt;
+&lt;div style=&quot;display:flex&quot;&gt;
+&lt;div class=&quot;text-title&quot;&gt;Fault Description&lt;/div&gt;
+&lt;div style=&quot;color:rgb(55,65,81);margin-top:0.125rem&quot;&gt;
+&lt;div data-id=&quot;react-email-markdown&quot;&gt;{{toHtml .Description}}&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+{{if .Labels.resource}}
+&lt;div style=&quot;display:flex;margin-bottom:0.5rem;&quot;&gt;
+&lt;div style=&quot;color:#000;font-weight:500;width:6rem;margin-right:1rem;&quot;&gt;Alert Object&lt;/div&gt;
+&lt;div style=&quot;color:rgb(55,65,81);margin-top:0.125rem&quot;&gt;
+&lt;div data-id=&quot;react-email-markdown&quot;&gt;{{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+{{end}}
+&lt;/div&gt;
+&lt;div style=&quot;display:flex;gap:1rem;margin-top:2rem&quot;&gt;&lt;a href=&quot;{{.DetailUrl}}?ack=1&quot; data-id=&quot;react-email-button&quot; target=&quot;_blank&quot; style=&quot;line-height:100%;text-decoration:none;display:inline-block;max-width:100%;padding:0px 0px&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span style=&quot;max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:0&quot;&gt;&lt;div style=&quot;padding-left:2rem;padding-right:2rem;padding-top:0.5rem;padding-bottom:0.5rem;background-color:rgb(108,83,177);border-radius:0.25rem;font-size:1rem;line-height:1.5rem;color:rgb(255,255,255);font-weight:600;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms&quot;&gt;Claim Now&lt;/div&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/a&gt;&lt;a href=&quot;{{.DetailUrl}}&quot; data-id=&quot;react-email-button&quot; target=&quot;_blank&quot; style=&quot;color:#61dafb;line-height:100%;text-decoration:none;display:inline-block;max-width:100%;padding:0px 0px&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span style=&quot;max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:0&quot;&gt;&lt;div style=&quot;padding-left:2rem;padding-right:2rem;padding-top:0.5rem;padding-bottom:0.5rem;background-color:rgb(255,255,255);border-width: 1px;border-style:solid;border-color:rgb(229,231,235);border-radius:0.25rem;font-size:1rem;line-height:1.5rem;color:rgb(0,0,0);font-weight:600&quot;&gt;View Details&lt;/div&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/a&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div style=&quot;display:flex;justify-content:flex-end;align-items:flex-end;margin-top:2rem&quot;&gt;
+&lt;div style=&quot;font-size:0.875rem;line-height:1.25rem;font-weight:500&quot;&gt;ALL RIGHTS RESERVED © Beijing Kuaimao Nebula Technology Co., Ltd&lt;/div&gt;
+&lt;/div&gt;
+&lt;/body&gt;
+
+&lt;/html&gt;
+</code></pre><p>As shown below:</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/7.avif" alt="drawing" style="display: block; margin: 0 auto;" width="500"/></article><nav><a href="/">doc.flashduty.com</a><a href="/en/flashduty">FlashDuty: One-Stop Alert Response Platform</a></nav><footer><div id="Ft"><b><a class="site" href="//flashcat.cloud"></a><b>© FlashCat Cloud</b><b>Site Build By <a class="a" href="https://i18n.site">I18N.SITE</a></b></b><b><a href="//github.com/flashcatcloud">&#xe64c;</a></b></div></footer></main>

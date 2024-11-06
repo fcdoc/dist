@@ -1,0 +1,33 @@
+<!doctypehtml><meta charset=UTF-8><link rel="alternate" type="application/rss+xml" hreflang="en" href="/en.rss"><link rel=stylesheet href=//registry.npmmirror.com/18x/latest/files/_.css><script src=//registry.npmmirror.com/18x/latest/files/seo.js></script><link rel=alternate href="https://doc.flashduty.com/flashduty/mixin/alert_integration/skywalking" hreflang=x-default><link rel=canonical href="https://doc.flashduty.com/flashduty/mixin/alert_integration/skywalking"><link rel=stylesheet href=//registry.npmmirror.com/18x/latest/files/seo.css><link rel=alternate hreflang=en href="https://doc.flashduty.com/en/flashduty/mixin/alert_integration/skywalking.htm"><link rel=alternate hreflang=zh href="https://doc.flashduty.com/zh/flashduty/mixin/alert_integration/skywalking.htm"><title>Skywalking Alert Events</title><main><article><hr /><h2>brief: Synchronize Skywalking alert events to Flashcat via webhook to achieve automated noise reduction processing of alert events</h2><h1>Skywalking Alert Events</h1><p>Synchronize Skywalking alert events to Flashcat via webhook to achieve automated noise reduction processing of alert events.</p><h2>In Flashduty</h2><p>You can obtain an integration push address through the following two methods. Choose either one.</p><h3>Use Proprietary Integration</h3><p>When you do not need to route alert events to different collaboration spaces, this method is preferred as it is simpler.</p><p>|+| Expand</p><pre><code>1. Enter the Flashduty console, select **Collaboration Space**, and enter the details page of a specific space
+2. Select the **Integrated Data** tab, click **Add an Integration**, and enter the Add Integration page
+3. Select **Skywalking** integration, click **Save**, and generate a card.
+4. Click on the generated card to view the **push address**, copy it for later use, and complete the setup.
+</code></pre><h3>Use Shared Integration</h3><p>When you need to route alert events to different collaboration spaces based on the payload information, this method is preferred.</p><p>|+| Expand</p><pre><code>1. Enter the Flashduty console, select **Integration Center =&gt; Alert Events**, and go to the integration selection page.
+2. Choose **Skywalking** integration:
+- **Integration Name**: Define a name for the current integration.
+3. After clicking **Save**, copy the newly generated **push address** on the current page for later use.
+4. Click **Create Route** to configure routing rules for the integration. You can match different alerts to different collaboration spaces based on conditions, or you can set a default collaboration space as a fallback and adjust as needed.
+5. Complete.
+</code></pre><h2>In Skywalking</h2><h2>Modify the Configuration File of the Skywalking Service</h2><ol><li>Log in to the Skywalking server.</li><li>Find the Skywalking configuration file ./config/alarm-settings.yml.</li><li>Add Level tags in the alert rules.</li></ol><pre><code class="language-i18n"># Only versions v8.6.0 and above support tags; other versions do not need to add them.
+# The corresponding values for Level: Critical, Warning, Info.
+# Please pay attention to the capitalization.
+rules:
+endpoint_relation_resp_time_rule:
+expression: sum(endpoint_relation_resp_time &gt; 1000) &gt;= 2
+period: 10
+message: Response time of endpoint relation {name} is more than 1000ms in 2 minutes of last 10 minutes
+tags:
+Level: Warning
+</code></pre><ol start="4"><li>Add the FlashDuty webhook address.</li></ol><pre><code class="language-i18n"># At the bottom of the configuration file, add:
+# For versions v8.8.0 to v9.5.0:
+webhooks:
+- url: https://api.flashcat.cloud/event/push/alert/skywalking?integration_key=18c7f1551df55fa28a1a87f0846d9d1e131
+
+# For version v10.0.0:
+hooks:
+webhook:
+default:
+is-default: true
+urls:
+- https://api.flashcat.cloud/event/push/alert/skywalking?integration_key=18c7f1551df55fa28a1a87f0846d9d1e131
+</code></pre><ol start="5"><li>After editing is complete, save and restart the Skywalking service to make the configuration file take effect</li></ol><h2>Status Comparison</h2><table><thead><tr><th>Skywalking</th><th>Flashcat</th><th>Status</th></tr></thead><tbody><tr><td>Critical</td><td>Critical</td><td>High</td></tr><tr><td>Warning</td><td>Warning</td><td>Average</td></tr><tr><td>Info</td><td>Info</td><td>Disaster</td></tr><tr><td>Other or Empty</td><td>Info</td><td>Disaster</td></tr></tbody></table></article><nav><a href="/">doc.flashduty.com</a><a href="/en/flashduty">FlashDuty: One-Stop Alert Response Platform</a></nav><footer><div id="Ft"><b><a class="site" href="//flashcat.cloud"></a><b>© FlashCat Cloud</b><b>Site Build By <a class="a" href="https://i18n.site">I18N.SITE</a></b></b><b><a href="//github.com/flashcatcloud">&#xe64c;</a></b></div></footer></main>

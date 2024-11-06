@@ -1,0 +1,13 @@
+<!doctypehtml><meta charset=UTF-8><link rel="alternate" type="application/rss+xml" hreflang="zh" href="/zh.rss"><link rel=stylesheet href=//registry.npmmirror.com/18x/latest/files/_.css><script src=//registry.npmmirror.com/18x/latest/files/seo.js></script><link rel=alternate href="https://doc.flashduty.com/flashduty/conf/alert_routings" hreflang=x-default><link rel=stylesheet href=//registry.npmmirror.com/18x/latest/files/seo.css><link rel=alternate hreflang=en href="https://doc.flashduty.com/en/flashduty/conf/alert_routings.htm"><link rel=alternate hreflang=zh href="https://doc.flashduty.com/zh/flashduty/conf/alert_routings.htm"><title>配置路由规则</title><main><article><hr /><h2>brief: 配置路由规则实现将相同类型或相关业务的告警事件分发到对应的协作空间中，实现信息分类处理、分析等</h2><h1>配置路由规则</h1><p>通过共享集成接入告警事件时，可以配置路由规则实现将相同类型或相关业务的告警事件分发到对应的协作空间中，实现信息分类处理、分析等。</p><h2>如何配置</h2><p>配置路径：<strong>集成中心=&gt;告警事件=&gt;某集成类型=&gt;创建路由</strong></p><p><strong>1. 添加路由：</strong> 路由可以添加多个，目前没限制，但建议保持简洁，规则过多时会导致可读性变差。
+<strong>2. 调整顺序：</strong> 当路由规则有两个及以上个时，可以通过上下箭头调整规则的生效顺序。
+<strong>3. 路由规则：</strong> 支持多条件多规则进行逻辑运算（同时可以区分匹配或不匹配运算），条件匹配时指出多种匹配模式，如精确匹配、通配符、正则等。您可以前往 <a href="/conf/how_to_filter">配置过滤条件</a>，了解如何配置限制条件。
+<strong>4. 流程控制：</strong> 当路由规则有两个及以上个时，可以选择<strong>停止或继续</strong>匹配下一规则，默认是<strong>继续匹配</strong>，则表示下面的路由继续生效，选择<strong>停止</strong>时，则下方规则不生效。
+<strong>5. 预览规则：</strong> 规则配置完成后，可以查看配置表达式。
+<strong>6. 插入路由：</strong> 当路由规则有两个及以上个时，可以从某个路由前后插入新的路由，省去调整顺序的操作。
+<strong>7. 默认路由：</strong> 共享集成至少有一个路由规则才可以接收到告警事件，所以提供了默认路由规则，当不配置路由规则或配置的路由规则不匹配是将通过默认路由分发到对应的协作空间。
+<strong>8. 投递空间：</strong> 可以选择将匹配的告警投递到多个协作空间。</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/alert_routings/1.avif"  width="800"><h2>配置示例</h2><h3>1. 相同业务组分发到同一空间</h3><p><strong>场景：</strong> 将来源 FlashCat 监控平台中相同业务组的告警接入到统一协作空间。
+<strong>规则：</strong> 根据 Labels.group_name 标签匹配。</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/alert_routings/2.avif"  width="800"><h2>常见问题</h2><p>|+| 路由规则没有生效？</p><pre><code>请查看告警事件是否跟规则匹配以及规则配置是否正确。
+</code></pre><p>|+| 多个路由规则相同时，投递到相同协作空间时会怎么处理？</p><pre><code>会向每个协作空间生成相应的故障，建议在同一规则中选择多个协作空间。
+</code></pre><p>|+| 配置路由规则后收不到告警了？</p><pre><code>请确认上报的告警事件是否可以命中配置的路由规则，建议配置一个默认兜底路由来接收无法匹配的告警事件。
+</code></pre><p>|+| 当路由规则流程控制选择的是停止时，是否会匹配默认路由？</p><pre><code>会匹配，默认路由是兜底路由，不受流程控制的限制。
+</code></pre></article><nav><a href="/">doc.flashduty.com</a><a href="/zh/flashduty">FlashDuty : 一站式告警响应平台</a></nav><footer><div id="Ft"><b><a class="site" href="//flashcat.cloud"></a><b>© 快猫星云</b><b>文档由<a class="a" href="https://i18n.site">i18n.site</a>构建</b></b><b><a href="//github.com/flashcatcloud">&#xe64c;</a></b></div></footer></main>

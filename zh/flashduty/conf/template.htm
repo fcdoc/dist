@@ -1,0 +1,451 @@
+<!doctypehtml><meta charset=UTF-8><link rel="alternate" type="application/rss+xml" hreflang="zh" href="/zh.rss"><link rel=stylesheet href=//registry.npmmirror.com/18x/latest/files/_.css><script src=//registry.npmmirror.com/18x/latest/files/seo.js></script><link rel=alternate href="https://doc.flashduty.com/flashduty/conf/template" hreflang=x-default><link rel=stylesheet href=//registry.npmmirror.com/18x/latest/files/seo.css><link rel=alternate hreflang=en href="https://doc.flashduty.com/en/flashduty/conf/template.htm"><link rel=alternate hreflang=zh href="https://doc.flashduty.com/zh/flashduty/conf/template.htm"><title>配置通知模版</title><main><article><hr /><h2>brief: 通过自定义配置模版，可以实现个性化通知内容的需求</h2><h1>配置通知模版</h1><h2>什么场景会使用模板？</h2><p>系统在__分派故障__时，使用模板渲染 <a href="#Incident">Incident</a> 并触发通知，分派可能发生于以下场景：</p><ol><li>手动创建故障并分派</li><li>上报告警事件，系统自动生成故障，按匹配到的分派策略进行分派</li><li>故障创建后，手动更改分派，即重新分派</li><li>根据分派策略设置，系统自动升级分派</li><li>故障关闭后重新打开，按照之前的设置，重新分派</li></ol><p>我们使用 <strong>Golang模板语法</strong> <a href="https://pkg.go.dev/html/template@go1.18.1">template/html</a> 解析数据，您可完成任何复杂的渲染需求。</p><ul><li>中文文档请参考 <a href="https://www.topgoer.com/%E5%B8%B8%E7%94%A8%E6%A0%87%E5%87%86%E5%BA%93/template.html#%E6%A8%A1%E6%9D%BF%E8%AF%AD%E6%B3%95">这里</a>，支持逻辑判断、循环、pipeline 以及常用函数；</li><li>我们引用了开源库 <a href="https://github.com/flashcatcloud/sprig/tree/flashcat">sprig</a>，其中包括上百个常用函数，您可直接在模板中直接调用；</li><li>如果您期望引入更多函数，欢迎提交 merge request</li></ul><h2>我可以引用哪些变量？</h2><p><strong>引用变量示例</strong>：</p><pre><code class="language-i18n">// 引用标题
+{{.Title}}
+
+// 引用发起人名称
+{{.Creator.PersonName}}
+
+// 引用resource标签值
+{{.Labels.resource}}
+
+// 引用命名中带”.“的标签值
+{{index .Labels &quot;A.B&quot;}}
+</code></pre><p><strong>完整变量列表</strong>（直接引用）：
+<span id="Incident"></span></p><table><thead><tr><th align="center">字段</th><th align="center">类型</th><th align="center">必含</th><th align="left">释义</th></tr></thead><tbody><tr><td align="center">ID</td><td align="center">string</td><td align="center">是</td><td align="left">故障 ID</td></tr></tbody></table><p><code>Title</code> | string | 是 | 故障标题
+<code>Description</code> | string | 是 | 故障描述，可能为空
+DetailUrl | string | 是 | 故障详情页地址
+Num | string | 是 | 故障短标识，仅用于方便肉眼识别，可能重复
+<code>IncidentSeverity</code> | string | 是 | 严重程度，枚举值：Critical，Warning，Info
+IncidentStatus | string | 是 | 故障状态，枚举值：Critical，Warning，Info，Ok
+<code>Progress</code> | string | 是 | 处理进度，枚举值：Triggered，Processing，Closed
+<code>StartTime</code> | int64 | 是 | 触发时间，Unix 秒时间戳
+LastTime | int64 | 否 | 最新事件时间，关联告警中的最新合入事件时间，Unix 秒时间戳，默认为 0
+EndTime | int64 | 否 | 恢复时间，关联的告警全部恢复时，故障会自动恢复且自动关闭。Unix 秒时间戳，默认为 0
+SnoozedBefore | int64 | 否 | 屏蔽截止时间，Unix 秒时间戳，默认为 0
+AckTime | int64 | 否 | 首次认领时间，Unix 秒时间戳，默认为 0
+CloseTime | int64 | 否 | 关闭时间，end_time 为故障恢复时间，close_time 为处理进度的关闭时间，故障恢复时会自动关闭，故障手动关闭时不影响故障恢复。Unix 秒时间戳，默认为 0
+Creator | <a href="#Person">Person</a> | 否 | 发起人信息，系统自动生成时不存在
+Closer | <a href="#Person">Person</a> | 否 | 关闭人信息，故障自动恢复时不存在
+AssignedTo | <a href="Assignment">Assignment</a> | 否 | 分派配置
+Responders | []<a href="#Responder">Responder</a> | 否 | 处理人列表，根据分派配置初始化，如果有非分派人员认领了故障，也会存在对应记录
+ChannelID | int64 | 否 | 协作空间 ID，当手动创建全局故障时值为 0
+ChannelName | string | 否 | 协作空间名称
+GroupMethod | string | 否 | 聚合方式，枚举值：n：不聚合，p：按规则聚合，i：智能聚合
+<code>Labels</code> | map[string]string | 否 | 标签 KV，Key 和 Value 均为字符串。手动创建时无此信息，自动创建时为聚合的第一条告警的标签信息
+AlertCnt | int64 | 是 | 关联告警个数
+Alerts | []<a href="#Alert">Alert</a> | 否 | 关联告警详情，手动创建时无此信息
+FireType | string | 否 | 通知类型，枚举值：fire：通知，refire：循环通知
+IsFlapping | bool | 否 | 是否处于抖动状态，即频繁发生与恢复，与收敛配置有关
+Impact | string | 否 | 故障影响，故障关闭后填写
+RootCause | string | 否 | 故障根因，故障关闭后填写
+Resolution | string | 否 | 故障解决办法，故障关闭后填写</p><p><span id="Person"></span><strong>Person</strong>（间接引用）:</p><table><thead><tr><th align="center">字段</th><th align="center">类型</th><th align="center">必含</th><th align="left">释义</th></tr></thead><tbody><tr><td align="center">person_id</td><td align="center">int64</td><td align="center">是</td><td align="left">人员 ID</td></tr><tr><td align="center">person_name</td><td align="center">string</td><td align="center">是</td><td align="left">人员名称</td></tr></tbody></table><p>email | string | 是 | 邮件地址</p><p><span id="Assignment"></span><strong>Assignment</strong>（间接引用）:</p><table><thead><tr><th align="center">字段</th><th align="center">类型</th><th align="center">必含</th><th align="left">释义</th></tr></thead><tbody><tr><td align="center">PersonIDs</td><td align="center">[]string</td><td align="center">否</td><td align="left">人员 ID 列表，仅当按照人员分派时存在</td></tr><tr><td align="center">EscalateRuleID</td><td align="center">string</td><td align="center">否</td><td align="left">分派策略 ID，仅当按照策略分派时存在</td></tr><tr><td align="center">EscalateRuleName</td><td align="center">string</td><td align="center">否</td><td align="left">分派策略名称</td></tr><tr><td align="center">LayerIdx</td><td align="center">string</td><td align="center">否</td><td align="left">分派环节，对应分派策略的层级索引，从 0 开始</td></tr><tr><td align="center">Type</td><td align="center">string</td><td align="center">是</td><td align="left">分派类型，枚举值：assign：分派，reassign：重新分派，escalate：升级分派，reopen：重开分派</td></tr></tbody></table><p><span id="Responder"></span><strong>Responder</strong>（间接引用）:</p><table><thead><tr><th align="center">字段</th><th align="center">类型</th><th align="center">必含</th><th align="left">释义</th></tr></thead><tbody><tr><td align="center">PersonID</td><td align="center">int64</td><td align="center">是</td><td align="left">人员 ID</td></tr><tr><td align="center">PersonName</td><td align="center">string</td><td align="center">是</td><td align="left">人员名称</td></tr><tr><td align="center">Email</td><td align="center">string</td><td align="center">是</td><td align="left">邮件地址</td></tr><tr><td align="center">AssignedAt</td><td align="center">int64</td><td align="center">是</td><td align="left">分派时间，Unix 秒时间戳，默认为 0</td></tr><tr><td align="center">AcknowledgedAt</td><td align="center">int64</td><td align="center">否</td><td align="left">认领时间，Unix 秒时间戳，默认为 0</td></tr></tbody></table><p><span id="Alert"></span><strong>Alert</strong>（间接引用）:</p><table><thead><tr><th align="center">字段</th><th align="center">类型</th><th align="center">必含</th><th align="left">释义</th></tr></thead><tbody><tr><td align="center">Title</td><td align="center">string</td><td align="center">是</td><td align="left">告警标题</td></tr><tr><td align="center">Description</td><td align="center">string</td><td align="center">是</td><td align="left">告警描述，可能为空</td></tr><tr><td align="center">AlertSeverity</td><td align="center">string</td><td align="center">是</td><td align="left">严重程度，枚举值：Critical，Warning，Info</td></tr><tr><td align="center">AlertStatus</td><td align="center">string</td><td align="center">是</td><td align="left">告警状态，枚举值：Critical，Warning，Info，Ok</td></tr><tr><td align="center">Progress</td><td align="center">string</td><td align="center">是</td><td align="left">处理进度，枚举值：Triggered，Processing，Closed</td></tr><tr><td align="center">StartTime</td><td align="center">int64</td><td align="center">是</td><td align="left">触发时间，Unix 秒时间戳</td></tr><tr><td align="center">EndTime</td><td align="center">int64</td><td align="center">否</td><td align="left">恢复时间，Unix 秒时间戳，默认为 0</td></tr><tr><td align="center">CloseTime</td><td align="center">int64</td><td align="center">否</td><td align="left">关闭时间，EndTime 为告警恢复时间，CloseTime 为处理进度的关闭时间，告警恢复时会自动关闭，告警手动关闭时不影响告警恢复。Unix 秒时间戳，默认为 0</td></tr></tbody></table><p><code>Labels</code> | map[string]string | 否 | 标签 KV，Key 和 Value 均为字符串</p><h2>常见问题</h2><ol><li><strong>我如何知道<code>Labels</code>具体有哪些标签信息？</strong></li></ol><ul><li>手动创建的故障没有标签；</li><li>自动创建的故障存在标签，与合入的第一条告警的标签相同。前往 <strong>故障列表</strong> 页面，找到一条故障并查看故障详情，可以看到全部标签信息</li></ul><ol start="2"><li><strong>我配置按照自定义模板渲染，实际发送内容却使用了__默认模板__？</strong></li></ol><ul><li>创建自定义模板时，系统使用 mock 数据来渲染模板，以检查语法错误；</li><li>mock 数据覆盖场景有限，可能无法匹配到您模板中部分逻辑分支，在实际运行时，可能会渲染失败；</li><li>渲染失败后，系统将使用默认模板兜底，来保证消息可达；</li><li>推荐您在不确定引用变量是否存在时，使用逻辑判断来避免渲染异常，如<code>resource</code>标签：</li></ul><pre><code class="language-i18n">// 错误做法: 直接读取标签
+{{.Labels.resource}}
+
+// 推荐做法: 先判断, 再读取标签
+{{if .Labels.resource}}{{.Labels.resource}}{{end}}
+</code></pre><ol start="3"><li><strong>故障标题含有“&gt;”之类的__字符转义__？</strong></li></ol><pre><code class="language-i18n">// 使用toHtml函数
+{{toHtml .Title}}
+
+// 使用第一个不为空的值进行渲染, 避免写复杂的if逻辑
+{{toHtml .Title .TitleEnglish}}
+</code></pre><ol start="4"><li><strong>时间变量都是时间戳类型，如何__转换时间格式__？</strong></li></ol><pre><code class="language-i18n">// date函数, 将时间戳转换可读格式
+// &quot;2006-01-02 15:04:05&quot;是一种常见格式, 更多格式请检索网络
+{{date &quot;2006-01-02 15:04:05&quot; .StartTime}}
+
+// ago函数, 将时间差转换为可读格式
+{{ago .StartTime}}
+</code></pre><ol start="5"><li><strong>如何在 for 循环内部引用外部变量？</strong></li></ol><pre><code class="language-i18n">// 在外部变量前增加”$“
+{{range .Responders}}
+{{if eq $.Progress &quot;Triggered&quot;}}
+【待处理】{{.Email}}
+{{end}}
+{{end}}
+</code></pre><ol start="6"><li><strong>如何提取命名中带”.“的字段值，如标签中的“obj.instance”的信息？</strong></li></ol><pre><code class="language-i18n">// 使用index函数
+{{index .Labels &quot;obj.instance&quot;}}
+</code></pre><ol start="7"><li><strong>如何提取故障关联告警中某个label的信息并去重？</strong></li></ol><pre><code class="language-i18n">// 使用alertLabels函数, 得到去重后的数组
+{{alertLabels . &quot;resource&quot;}}
+
+// 使用joinAlertLabels函数, 得到去重后的数组, 然后按照“sep”来拼接为字符串
+{{joinAlertLabels . &quot;resource&quot; &quot;sep&quot;}}
+</code></pre><ol start="8"><li><strong>如何遍历并打印labels？</strong></li></ol><pre><code class="language-i18n">// 完整遍历
+{{range $k, $v := .Labels}}
+{{$k}} : {{toHtml $v}}
+{{end}}
+
+// 排除单个label
+{{range $k, $v := .Labels}}
+{{if ne $k &quot;resource&quot;}}
+{{$k}} : {{toHtml $v}}
+{{end}}
+{{end}}
+
+// 排除多个labels
+{{range $k, $v := .Labels}}
+{{if not (in $k &quot;resource&quot; &quot;body_text&quot;)}}
+{{$k}} : {{toHtml $v}}
+{{end}}
+{{end}}
+
+</code></pre><ol start="9"><li><strong>如何查阅更多的函数及其使用示例？</strong></li></ol><ul><li>函数列表：<a href="https://github.com/flashcatcloud/sprig/blob/master/functions.go#L97">https://github.com/flashcatcloud/sprig/blob/master/functions.go#L97</a></li><li>使用示例：查看对应的_test.go 文件，比如 date 函数测试用例见 <a href="https://github.com/flashcatcloud/sprig/blob/master/date_test.go">https://github.com/flashcatcloud/sprig/blob/master/date_test.go</a></li></ul><p>以下为各通知渠道具体说明。</p><h2>飞书应用</h2><p>您需要预先配置 <strong>集成中心-即时消息-飞书</strong> 集成，才能发送消息卡片。如果不设置自定义内容，将采用系统默认模板，渲染全部标签信息：</p><pre><code>{{if .Description}}**description** :{{toHtml .Labels.body_text .Description}}{{end}}
+{{if .Labels.resource}}**resource** : {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{range $k, $v := .Labels}}
+{{if not (in $k &quot;resource&quot; &quot;body_text&quot;)}}**{{$k}}** : {{toHtml $v}}{{end}}{{end}}
+</code></pre><p>如下图所示：</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/1.avif" alt="drawing" style="display: block; margin: 0 auto;" width="500"/><p>如果您期望仅展示关键标签信息，可以参照下边的代码段：</p><ul><li>我们列出了一些常见标签，您可自行删减；</li><li>在飞书应用中，系统会自动帮您删除（因标签不存在导致的）渲染空行，您可放心配置</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}resource: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{if (index .Labels &quot;check&quot;)}}check: {{toHtml (index .Labels &quot;check&quot;)}}{{end}}
+{{if (index .Labels &quot;metric&quot;)}}metric: {{index .Labels &quot;metric&quot;}}{{end}}
+{{if (index .Labels &quot;prom_ql&quot;)}}prom_ql: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;host_ql&quot;)}}host_ql: {{toHtml (index .Labels &quot;host_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;trigger_value&quot;)}}trigger_value: {{index .Labels &quot;trigger_value&quot;}}{{end}}
+{{if (index .Labels &quot;region&quot;)}}region: {{index .Labels &quot;region&quot;}}{{end}}
+{{if (index .Labels &quot;cluster&quot;)}}cluster: {{index .Labels &quot;cluster&quot;}}{{end}}
+{{if (index .Labels &quot;business&quot;)}}business: {{index .Labels &quot;business&quot;}}{{end}}
+{{if (index .Labels &quot;service&quot;)}}service: {{index .Labels &quot;service&quot;}}{{end}}
+{{if (index .Labels &quot;env&quot;)}}env: {{index .Labels &quot;env&quot;}}{{end}}
+{{if (index .Labels &quot;type&quot;)}}type: {{index .Labels &quot;type&quot;}}{{end}}
+{{if (index .Labels &quot;topic&quot;)}}topic: {{index .Labels &quot;topic&quot;}}{{end}}
+{{if (index .Labels &quot;cpu&quot;)}}cpu: {{index .Labels &quot;cpu&quot;}}{{end}}
+{{if (index .Labels &quot;device&quot;)}}device: {{index .Labels &quot;device&quot;}}{{end}}
+{{if (index .Labels &quot;path&quot;)}}path: {{index .Labels &quot;path&quot;}}{{end}}
+{{if (index .Labels &quot;fstype&quot;)}}fstype: {{index .Labels &quot;fstype&quot;}}{{end}}
+{{if (index .Labels &quot;name&quot;)}}name: {{index .Labels &quot;name&quot;}}{{end}}
+{{if (index .Labels &quot;mode&quot;)}}mode: {{index .Labels &quot;mode&quot;}}{{end}}
+{{if (index .Labels &quot;runbook_url&quot;)}}runbook_url: {{toHtml (index .Labels &quot;runbook_url&quot;)}}{{end}}
+</code></pre><h2>钉钉应用</h2><p>您需要预先配置 <strong>集成中心-即时消息-钉钉</strong> 集成，才能发送消息卡片。如果不设置自定义内容，将采用系统默认模板，渲染全部标签信息：</p><pre><code>{{if .Description}}**description** :{{toHtml .Labels.body_text .Description}}{{end}}
+{{if .Labels.resource}}**resource** : {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{range $k, $v := .Labels}}
+{{if not (in $k &quot;resource&quot; &quot;body_text&quot;)}}**{{$k}}** : {{toHtml $v}}{{end}}{{end}}
+</code></pre><p>如下图所示：</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/2.avif" alt="drawing" style="display: block; margin: 0 auto;" width="500"/><p>如果您期望仅展示关键标签信息，可以参照下边的代码段：</p><ul><li>我们列出了一些常见标签，您可自行删减；</li><li>在钉钉应用中，系统会自动帮您删除（因标签不存在导致的）渲染空行，您可放心配置</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}**resource**: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{if (index .Labels &quot;metric&quot;)}}**metric**: {{index .Labels &quot;metric&quot;}}{{end}}
+{{if (index .Labels &quot;prom_ql&quot;)}}**prom_ql**: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;trigger_value&quot;)}}**trigger_value**: {{index .Labels &quot;trigger_value&quot;}}{{end}}
+{{if (index .Labels &quot;host_ql&quot;)}}**host_ql**: {{toHtml (index .Labels &quot;host_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;region&quot;)}}**region**: {{index .Labels &quot;region&quot;}}{{end}}
+{{if (index .Labels &quot;cluster&quot;)}}**cluster**: {{index .Labels &quot;cluster&quot;}}{{end}}
+{{if (index .Labels &quot;business&quot;)}}**business**: {{index .Labels &quot;business&quot;}}{{end}}
+{{if (index .Labels &quot;service&quot;)}}**service**: {{index .Labels &quot;service&quot;}}{{end}}
+{{if (index .Labels &quot;env&quot;)}}**env**: {{index .Labels &quot;env&quot;}}{{end}}
+{{if (index .Labels &quot;type&quot;)}}**type**: {{index .Labels &quot;type&quot;}}{{end}}
+{{if (index .Labels &quot;topic&quot;)}}**topic**: {{index .Labels &quot;topic&quot;}}{{end}}
+{{if (index .Labels &quot;cpu&quot;)}}**cpu**: {{index .Labels &quot;cpu&quot;}}{{end}}
+{{if (index .Labels &quot;device&quot;)}}**device**: {{index .Labels &quot;device&quot;}}{{end}}
+{{if (index .Labels &quot;path&quot;)}}**path**: {{index .Labels &quot;path&quot;}}{{end}}
+{{if (index .Labels &quot;fstype&quot;)}}**fstype**: {{index .Labels &quot;fstype&quot;}}{{end}}
+{{if (index .Labels &quot;name&quot;)}}**name**: {{index .Labels &quot;name&quot;}}{{end}}
+{{if (index .Labels &quot;mode&quot;)}}**mode**: {{index .Labels &quot;mode&quot;}}{{end}}
+{{if (index .Labels &quot;runbook_url&quot;)}}**runbook_url**: {{index .Labels &quot;runbook_url&quot;}}{{end}}
+</code></pre><h2>企业微信应用</h2><p>您需要预先配置 <strong>集成中心-即时消息-企业微信</strong> 集成，才能发送消息卡片。如果不设置自定义内容，将采用系统默认模板，仅渲染常见标签信息：</p><ul><li>我们列出了一些常见标签，您可自行删减；</li><li>在企业微信应用中，系统会自动帮您删除（因标签不存在导致的）渲染空行，您可放心配置</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}resource: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{if (index .Labels &quot;metric&quot;)}}metric: {{index .Labels &quot;metric&quot;}}{{end}}
+{{if (index .Labels &quot;prom_ql&quot;)}}prom_ql: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;trigger_value&quot;)}}trigger_value: {{index .Labels &quot;trigger_value&quot;}}{{end}}
+{{if (index .Labels &quot;host_ql&quot;)}}host_ql: {{toHtml (index .Labels &quot;host_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;region&quot;)}}region: {{index .Labels &quot;region&quot;}}{{end}}
+{{if (index .Labels &quot;cluster&quot;)}}cluster: {{index .Labels &quot;cluster&quot;}}{{end}}
+{{if (index .Labels &quot;business&quot;)}}business: {{index .Labels &quot;business&quot;}}{{end}}
+{{if (index .Labels &quot;service&quot;)}}service: {{index .Labels &quot;service&quot;}}{{end}}
+{{if (index .Labels &quot;env&quot;)}}env: {{index .Labels &quot;env&quot;}}{{end}}
+{{if (index .Labels &quot;type&quot;)}}type: {{index .Labels &quot;type&quot;}}{{end}}
+{{if (index .Labels &quot;topic&quot;)}}topic: {{index .Labels &quot;topic&quot;}}{{end}}
+{{if (index .Labels &quot;cpu&quot;)}}cpu: {{index .Labels &quot;cpu&quot;}}{{end}}
+{{if (index .Labels &quot;device&quot;)}}device: {{index .Labels &quot;device&quot;}}{{end}}
+{{if (index .Labels &quot;path&quot;)}}path: {{index .Labels &quot;path&quot;}}{{end}}
+{{if (index .Labels &quot;fstype&quot;)}}fstype: {{index .Labels &quot;fstype&quot;}}{{end}}
+{{if (index .Labels &quot;name&quot;)}}name: {{index .Labels &quot;name&quot;}}{{end}}
+{{if (index .Labels &quot;mode&quot;)}}mode: {{index .Labels &quot;mode&quot;}}{{end}}
+{{if (index .Labels &quot;runbook_url&quot;)}}runbook_url: {{toHtml (index .Labels &quot;runbook_url&quot;)}}{{end}}
+</code></pre><p>如下图所示：</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/3.avif" alt="drawing" style="display: block; margin: 0 auto;" width="500"/><p><strong>注意，企业微信限制了卡片长度，在模板渲染区域，您最多可以渲染不超过 8 行内容，超过 8 行的部分将被隐藏</strong></p><h2>Slack 应用</h2><p>您需要预先配置 <strong>集成中心-即时消息- Slack</strong> 集成，才能发送消息卡片。如果不设置自定义内容，将采用系统默认模板，仅渲染常见标签信息：</p><pre><code>{{if .Description}}*description* :{{toHtml .Labels.body_text .Description}}{{end}}
+{{if .Labels.resource}}*resource* : {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{range $k, $v := .Labels}}
+{{if not (in $k &quot;resource&quot; &quot;body_text&quot;)}}*{{$k}}* : {{toHtml $v}}{{end}}{{end}}
+</code></pre><p>如下图所示：</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/4.avif" alt="drawing" style="display: block; margin: 0 auto;" width="600"/><p>如果您期望仅展示关键标签信息，可以参照下边的代码段：</p><ul><li>我们列出了一些常见标签，您可自行删减；</li><li>消息可以发送长度为15000左右字符，超出后截断发送；</li><li>在 Slack 应用中，系统会自动帮您删除（因标签不存在导致的）渲染空行，您可放心配置</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}*resource*: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{if (index .Labels &quot;metric&quot;)}}*metric*: {{index .Labels &quot;metric&quot;}}{{end}}
+{{if (index .Labels &quot;prom_ql&quot;)}}*prom_ql*: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;trigger_value&quot;)}}*trigger_value*: {{index .Labels &quot;trigger_value&quot;}}{{end}}
+{{if (index .Labels &quot;host_ql&quot;)}}*host_ql*: {{index .Labels &quot;host_ql&quot;}}{{end}}
+{{if (index .Labels &quot;region&quot;)}}*region*: {{index .Labels &quot;region&quot;}}{{end}}
+{{if (index .Labels &quot;cluster&quot;)}}*cluster*: {{index .Labels &quot;cluster&quot;}}{{end}}
+{{if (index .Labels &quot;business&quot;)}}*business*: {{index .Labels &quot;business&quot;}}{{end}}
+{{if (index .Labels &quot;service&quot;)}}*service*: {{index .Labels &quot;service&quot;}}{{end}}
+{{if (index .Labels &quot;env&quot;)}}*env*: {{index .Labels &quot;env&quot;}}{{end}}
+{{if (index .Labels &quot;type&quot;)}}*type*: {{index .Labels &quot;type&quot;}}{{end}}
+{{if (index .Labels &quot;topic&quot;)}}*topic*: {{index .Labels &quot;topic&quot;}}{{end}}
+{{if (index .Labels &quot;cpu&quot;)}}*cpu*: {{index .Labels &quot;cpu&quot;}}{{end}}
+{{if (index .Labels &quot;device&quot;)}}*device*: {{index .Labels &quot;device&quot;}}{{end}}
+{{if (index .Labels &quot;path&quot;)}}*path*: {{index .Labels &quot;path&quot;}}{{end}}
+{{if (index .Labels &quot;fstype&quot;)}}*fstype*: {{index .Labels &quot;fstype&quot;}}{{end}}
+{{if (index .Labels &quot;name&quot;)}}*name*: {{index .Labels &quot;name&quot;}}{{end}}
+{{if (index .Labels &quot;mode&quot;)}}*mode*: {{index .Labels &quot;mode&quot;}}{{end}}
+{{if (index .Labels &quot;runbook_url&quot;)}}*runbook_url*: {{index .Labels &quot;runbook_url&quot;}}{{end}}
+</code></pre><h2>Microsoft Teams 应用</h2><p>您需要预先配置 <strong>集成中心-即时消息- Microsoft Teams</strong> 集成，才能发送消息卡片。如果不设置自定义内容，将采用系统默认模板，仅渲染常见标签信息：</p><pre><code>{{if .Description}}**description** :{{toHtml .Labels.body_text .Description}}{{end}}
+{{if .Labels.resource}}**resource** : {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{range $k, $v := .Labels}}
+{{if not (in $k &quot;resource&quot; &quot;body_text&quot; &quot;body_text_with_table&quot;)}}**{{$k}}** : {{toHtml $v}}{{end}}{{end}}
+</code></pre><p>如下图所示：</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/5.avif" alt="drawing" style="display: block; margin: 0 auto;" width="300"/><p>如果您期望仅展示关键标签信息，可以参照下边的代码段：</p><ul><li>我们列出了一些常见标签，您可自行删减；</li><li>消息可以发送长度为 28KB 左右字节，超出后报错；</li><li>在 Microsoft Teams 应用中，系统会自动帮您删除（因标签不存在导致的）渲染空行，您可放心配置</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}**resource**: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{if (index .Labels &quot;metric&quot;)}}**metric**: {{index .Labels &quot;metric&quot;}}{{end}}
+{{if (index .Labels &quot;prom_ql&quot;)}}**prom_ql**: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;trigger_value&quot;)}}**trigger_value**: {{index .Labels &quot;trigger_value&quot;}}{{end}}
+{{if (index .Labels &quot;host_ql&quot;)}}**host_ql**: {{index .Labels &quot;host_ql&quot;}}{{end}}
+{{if (index .Labels &quot;region&quot;)}}**region**: {{index .Labels &quot;region&quot;}}{{end}}
+{{if (index .Labels &quot;cluster&quot;)}}**cluster**: {{index .Labels &quot;cluster&quot;}}{{end}}
+{{if (index .Labels &quot;business&quot;)}}**business**: {{index .Labels &quot;business&quot;}}{{end}}
+{{if (index .Labels &quot;service&quot;)}}**service**: {{index .Labels &quot;service&quot;}}{{end}}
+{{if (index .Labels &quot;env&quot;)}}**env**: {{index .Labels &quot;env&quot;}}{{end}}
+{{if (index .Labels &quot;type&quot;)}}**type**: {{index .Labels &quot;type&quot;}}{{end}}
+{{if (index .Labels &quot;topic&quot;)}}**topic**: {{index .Labels &quot;topic&quot;}}{{end}}
+{{if (index .Labels &quot;cpu&quot;)}}**cpu**: {{index .Labels &quot;cpu&quot;}}{{end}}
+{{if (index .Labels &quot;device&quot;)}}**device**: {{index .Labels &quot;device&quot;}}{{end}}
+{{if (index .Labels &quot;path&quot;)}}**path**: {{index .Labels &quot;path&quot;}}{{end}}
+{{if (index .Labels &quot;fstype&quot;)}}**fstype**: {{index .Labels &quot;fstype&quot;}}{{end}}
+{{if (index .Labels &quot;name&quot;)}}**name**: {{index .Labels &quot;name&quot;}}{{end}}
+{{if (index .Labels &quot;mode&quot;)}}**mode**: {{index .Labels &quot;mode&quot;}}{{end}}
+{{if (index .Labels &quot;runbook_url&quot;)}}**runbook_url**: {{index .Labels &quot;runbook_url&quot;}}{{end}}
+</code></pre><h2>Microsoft Teams 应用</h2><p>您需要预先配置 <strong>集成中心-即时消息- Microsoft Teams</strong> 集成，才能发送消息卡片。如果不设置自定义内容，将采用系统默认模板，仅渲染常见标签信息：</p><pre><code>{{if .Description}}**description** :{{toHtml .Labels.body_text .Description}}{{end}}
+{{if .Labels.resource}}**resource** : {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{range $k, $v := .Labels}}
+{{if not (in $k &quot;resource&quot; &quot;body_text&quot; &quot;body_text_with_table&quot;)}}**{{$k}}** : {{toHtml $v}}{{end}}{{end}}
+</code></pre><p>如下图所示：</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/5.avif" alt="drawing" style="display: block; margin: 0 auto;" width="300"/><p>如果您期望仅展示关键标签信息，可以参照下边的代码段：</p><ul><li>我们列出了一些常见标签，您可自行删减；</li><li>消息可以发送长度为 28KB 左右字节，超出后报错；</li><li>在 Microsoft Teams 应用中，系统会自动帮您删除（因标签不存在导致的）渲染空行，您可放心配置</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}**resource**: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+{{if (index .Labels &quot;metric&quot;)}}**metric**: {{index .Labels &quot;metric&quot;}}{{end}}
+{{if (index .Labels &quot;prom_ql&quot;)}}**prom_ql**: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
+{{if (index .Labels &quot;trigger_value&quot;)}}**trigger_value**: {{index .Labels &quot;trigger_value&quot;}}{{end}}
+{{if (index .Labels &quot;host_ql&quot;)}}**host_ql**: {{index .Labels &quot;host_ql&quot;}}{{end}}
+{{if (index .Labels &quot;region&quot;)}}**region**: {{index .Labels &quot;region&quot;}}{{end}}
+{{if (index .Labels &quot;cluster&quot;)}}**cluster**: {{index .Labels &quot;cluster&quot;}}{{end}}
+{{if (index .Labels &quot;business&quot;)}}**business**: {{index .Labels &quot;business&quot;}}{{end}}
+{{if (index .Labels &quot;service&quot;)}}**service**: {{index .Labels &quot;service&quot;}}{{end}}
+{{if (index .Labels &quot;env&quot;)}}**env**: {{index .Labels &quot;env&quot;}}{{end}}
+{{if (index .Labels &quot;type&quot;)}}**type**: {{index .Labels &quot;type&quot;}}{{end}}
+{{if (index .Labels &quot;topic&quot;)}}**topic**: {{index .Labels &quot;topic&quot;}}{{end}}
+{{if (index .Labels &quot;cpu&quot;)}}**cpu**: {{index .Labels &quot;cpu&quot;}}{{end}}
+{{if (index .Labels &quot;device&quot;)}}**device**: {{index .Labels &quot;device&quot;}}{{end}}
+{{if (index .Labels &quot;path&quot;)}}**path**: {{index .Labels &quot;path&quot;}}{{end}}
+{{if (index .Labels &quot;fstype&quot;)}}**fstype**: {{index .Labels &quot;fstype&quot;}}{{end}}
+{{if (index .Labels &quot;name&quot;)}}**name**: {{index .Labels &quot;name&quot;}}{{end}}
+{{if (index .Labels &quot;mode&quot;)}}**mode**: {{index .Labels &quot;mode&quot;}}{{end}}
+{{if (index .Labels &quot;runbook_url&quot;)}}**runbook_url**: {{index .Labels &quot;runbook_url&quot;}}{{end}}
+</code></pre><h2>飞书机器人</h2><p>飞书机器人仅支持发送纯文本消息。</p><ul><li>消息__最大长度为4000字节，超出后截断发送__；</li><li>如果文本中包含<code>&lt;br&gt;</code>，渲染时会__先删除空行，再将<code>&lt;br&gt;</code>替换为换行符__；</li><li>如果不设置自定义内容，将采用系统默认模板，仅展示关键信息：</li></ul><pre><code class="language-i18n">{{fireReason .}}INC #{{.Num}} {{toHtml .Title}}
+-----
+协作空间: {{if .ChannelName}}{{.ChannelName}}{{else}}无{{end}}
+严重程度: {{.IncidentSeverity}}
+触发时间: {{date &quot;2006-01-02 15:04:05&quot; .StartTime}}
+持续时长: {{ago .StartTime}}{{if gt .AlertCnt 1}}
+聚合告警: {{.AlertCnt}}条{{end}}{{if .Labels.resource}}
+告警对象: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}{{if .Description}}
+故障描述: {{toHtml .Description}}{{end}}{{if gt (len .Responders) 0}}
+分派人员: {{range .Responders}}@{{.PersonName}} {{end}}{{end}}
+&lt;br&gt;详情: {{.DetailUrl}}
+</code></pre><h2>钉钉机器人</h2><p>钉钉机器人仅支持发送 Markdown 消息（<a href="https://open.dingtalk.com/document/robots/custom-robot-access#title-7ur-3ok-s1a">语法限制</a>）。</p><ul><li>消息__最大长度为4000字节，超出后截断发送__；</li><li>如果文本中包含<code>&lt;br&gt;</code>，渲染时会__先删除空行，再将<code>&lt;br&gt;</code>替换为换行符__；</li><li>如果不设置自定义内容，将采用系统默认模板，仅展示关键信息：</li></ul><pre><code class="language-i18n">{{fireReason .}}INC [#{{.Num}}]({{.DetailUrl}}) {{toHtml .Title}}
+
+- 协作空间: {{if .ChannelName}}{{.ChannelName}}{{else}}无{{end}}
+- 严重程度: {{$s := colorSeverity .IncidentSeverity}}{{toHtml $s}}
+- 触发时间: {{date &quot;2006-01-02 15:04:05&quot; .StartTime}}
+- 持续时长: {{ago .StartTime}}{{if gt .AlertCnt 1}}
+- 聚合告警: {{.AlertCnt}}条{{end}}{{if .Labels.resource}}
+- 告警对象: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}{{if .Description}}
+- 故障描述: {{toHtml .Description}}{{end}}{{if gt (len .Responders) 0}}
+- 分派人员: {{range .Responders}}@{{.PersonName}} {{end}}{{end}}
+&lt;br&gt;[详情]({{.DetailUrl}})|[认领]({{.DetailUrl}}?ack=1)
+</code></pre><h2>企业微信机器人</h2><p>企微机器人仅支持发送 Markdown 消息（<a href="https://developer.work.weixin.qq.com/document/path/91770#markdown%E7%B1%BB%E5%9E%8B">语法限制</a>）。</p><ul><li>消息__最大长度为4000字节，超出后截断发送__；</li><li>如果文本中包含<code>&lt;br&gt;</code>，渲染时会__先删除空行，再将<code>&lt;br&gt;</code>替换为换行符__；</li><li>如果不设置自定义内容，将采用系统默认模板，仅展示关键信息：</li></ul><pre><code class="language-i18n">{{fireReason .}}**INC [#{{.Num}}]({{.DetailUrl}}) {{toHtml .Title}}**
+&gt; 协作空间: &lt;font color=&quot;warning&quot;&gt;{{if .ChannelName}}{{.ChannelName}}{{else}}无{{end}}&lt;/font&gt;
+&gt; 严重程度: &lt;font color=&quot;warning&quot;&gt;{{.IncidentSeverity}}&lt;/font&gt;
+&gt; 触发时间: {{date &quot;2006-01-02 15:04:05&quot; .StartTime}}
+&gt; 持续时长: {{ago .StartTime}}{{if gt .AlertCnt 1}}
+&gt; 聚合告警: {{.AlertCnt}}条{{end}}{{if .Labels.resource}}
+&gt; 告警对象: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}{{if .Description}}
+&gt; 故障描述: {{toHtml .Description}}{{end}}{{if gt (len .Responders) 0}}
+&gt; 分派人员: {{range .Responders}}@{{.PersonName}} {{end}}{{end}}
+&lt;br&gt;[详情]({{.DetailUrl}})|[认领]({{.DetailUrl}}?ack=1)
+</code></pre><h2>Telegram 机器人</h2><ul><li>配置国内能访问的Telegram服务地址；</li><li>消息__最大长度为4096字符，超出后不发送__；</li><li>如果文本中包含<code>&lt;br&gt;</code>，渲染时会__先删除空行，再将<code>&lt;br&gt;</code>替换为换行符__；</li><li>如果不设置自定义内容，将采用系统默认模板，仅展示关键信息：</li></ul><pre><code class="language-i18n">{{fireReason .}}INC [#{{.Num}}]({{.DetailUrl}}) {{toHtml .Title}}
+-----
+协作空间: {{if .ChannelName}}{{.ChannelName}}{{else}}无{{end}}
+严重程度: {{.IncidentSeverity}}
+触发时间: {{date &quot;2006-01-02 15:04:05&quot; .StartTime}}
+持续时长: {{ago .StartTime}}{{if gt .AlertCnt 1}}
+聚合告警: {{.AlertCnt}}条{{end}}{{if .Labels.resource}}
+告警对象: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}({{.Labels.resource}}){{end}}{{if .Description}}
+故障描述: {{toHtml .Description}}{{end}}{{if gt (len .Responders) 0}}
+分派人员: {{range .Responders}}@{{.PersonName}} {{end}}{{end}}
+
+&lt;br&gt;[详情]({{.DetailUrl}})|[认领]({{.DetailUrl}}?ack=1)
+</code></pre><h2>Slack 机器人</h2><ul><li>消息__可以发送长度为15000左右字符，超出后截断发送__；</li><li>如果文本中包含<code>&lt;br&gt;</code>，渲染时会__先删除空行，再将<code>&lt;br&gt;</code>替换为换行符__；</li><li>如果不设置自定义内容，将采用系统默认模板，仅展示关键信息：</li></ul><pre><code class="language-i18n">{{fireReason .}}INC &lt;{{.DetailUrl}}|#{{.Num}}&gt; {{toHtml .Title}}
+-----
+协作空间: {{if .ChannelName}}{{.ChannelName}}{{else}}无{{end}}
+严重程度: {{.IncidentSeverity}}
+触发时间: {{date &quot;2006-01-02 15:04:05&quot; .StartTime}}
+持续时长: {{ago .StartTime}}{{if gt .AlertCnt 1}}
+聚合告警: {{.AlertCnt}}条{{end}}{{if .Labels.resource}}
+告警对象: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}{{if .Description}}
+故障描述: {{toHtml .Description}}{{end}}{{if gt (len .Responders) 0}}
+分派人员: {{range .Responders}}@{{.PersonName}} {{end}}{{end}}
+-----
+&lt;br&gt;&lt;{{.DetailUrl}}|详情&gt;|&lt;{{.DetailUrl}}?ack=1|认领&gt;
+</code></pre><h2>Zoom 机器人</h2><ul><li>消息__可以发送长度为4000左右字符，超出后截断发送__；</li><li>如果文本中包含<code>&lt;br&gt;</code>，渲染时会__先删除空行，再将<code>&lt;br&gt;</code>替换为换行符__；</li><li>消息格式 <strong>遵循Zoom消息格式</strong>，当前机器人应用不支持Markdown，其他格式可以参考官网: <a href="https://developers.zoom.us/docs/team-chat-apps/customizing-messages/">https://developers.zoom.us/docs/team-chat-apps/customizing-messages/</a></li><li>如果不设置自定义内容，将采用系统默认模板，仅展示关键信息：</li></ul><pre><code class="language-i18n">{&quot;head&quot;: {
+&quot;text&quot;: &quot;{{fireReason .}}INC [#{{.Num}}] {{toHtml .Title}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: true,
+&quot;italic&quot;: false,
+&quot;color&quot;: &quot;{{$s := serverityToColor .IncidentSeverity}}{{toHtml $s}}&quot;
+}
+},
+&quot;body&quot;: [
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;协作空间: {{if .ChannelName}}{{.ChannelName}}{{else}}无{{end}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: false,
+&quot;italic&quot;: false
+}
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;严重程度: {{.IncidentSeverity}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: false,
+&quot;italic&quot;: false,
+&quot;color&quot;: &quot;{{$s := serverityToColor .IncidentSeverity}}{{toHtml $s}}&quot;
+}
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;持续时长: {{ago .StartTime}}{{if gt .AlertCnt 1}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: false,
+&quot;italic&quot;: false
+}
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;聚合告警: {{.AlertCnt}}条{{end}}{{if .Labels.resource}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: false,
+&quot;italic&quot;: false
+}
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;告警对象: {{.Labels.resource}}{{end}}{{if .Description}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: false,
+&quot;italic&quot;: false
+}
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;故障描述: {{toHtml .Description}}{{end}}{{if gt (len .Responders) 0}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: false,
+&quot;italic&quot;: false
+}
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;分派人员: {{range .Responders}}@{{.PersonName}}{{end}}{{end}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: false,
+&quot;italic&quot;: false
+}
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;查看详情&quot;,
+&quot;link&quot;: &quot;{{.DetailUrl}}{{if .IsFlapping}}&quot;
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;注意: 当前故障状态变化频繁, 将收敛通知{{.Flapping.MuteMinutes}}分钟, 建议您优化告警策略。{{end}}{{if .IsInStorm}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: true,
+&quot;italic&quot;: false
+}
+},
+{
+&quot;type&quot;: &quot;message&quot;,
+&quot;text&quot;: &quot;注意: 当前故障已聚合{{.AlertCnt}}条告警, 触发告警风暴, 请加急处理! {{end}}&quot;,
+&quot;style&quot;: {
+&quot;bold&quot;: true,
+&quot;italic&quot;: false
+}
+}
+]
+}
+</code></pre><h2>短信</h2><p>如果不设置自定义内容，将采用系统默认模板渲染通知：</p><pre><code>您有故障待处理: {{toHtml .Title}}, 协作空间: {{.ChannelName}}, 等级: {{.IncidentSeverity}}{{if gt .AlertCnt 1}}, 共聚合{{.AlertCnt}}条告警{{end}}
+</code></pre><h2>邮件</h2><p>如果不设置自定义内容，将采用系统默认模板渲染通知：</p><pre><code class="language-i18n">&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot; /&gt;
+&lt;title&gt;{{.Title}}&lt;/title&gt;
+&lt;html lang=&quot;zh&quot;&gt;
+
+&lt;head data-id=&quot;__react-email-head&quot;&gt;
+&lt;style&gt;
+.bg-Critical { background-color: #C80000; }
+.bg-Warning { background-color: #FA7D00; }
+.bg-Info { background-color: #FABE00; }
+.bg-Ok { background-color: rgb(132 204 22); }
+.text-Critical { color: #C80000; }
+.text-Warning { color: #FA7D00; }
+.text-Info { color: #FABE00; }
+.text-Ok { color: rgb(132 204 22); }
+.text-title {font-weight:500;width:6rem;flex-shrink:0}
+.text-content {color:rgb(55,65,81)}
+&lt;/style&gt;
+&lt;/head&gt;
+
+&lt;body data-id=&quot;__react-email-body&quot; style=&quot;background-color:rgb(255,255,255);border-radius:0.25rem;margin-top:2.5rem;margin-bottom:2.5rem;margin-left:auto;margin-right:auto;padding:1rem;min-width:400px;max-width:660px;font-family:ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji&quot;&gt;
+&lt;div style=&quot;width:100%;height:0.375rem;margin-bottom:2rem&quot; class=&quot;bg-{{.IncidentSeverity}}&quot;&gt;&lt;/div&gt;
+&lt;div style=&quot;display:flex;align-items:center;margin-bottom:1.5rem&quot;&gt;
+&lt;div style=&quot;display:flex;align-items:flex-end;gap:1rem&quot;&gt;&lt;img witdh=&quot;120&quot; data-id=&quot;react-email-img&quot; src=&quot;https://fcimg.3ti.site/zh/flashduty/conf/template/6.avif&quot; height=&quot;40&quot; style=&quot;display:block;outline:none;border:none;text-decoration:none&quot; /&gt;&lt;span style=&quot;font-size:1.25rem;line-height:1.75rem;font-weight:600&quot;&gt;您有故障待处理&lt;/span&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div style=&quot;background-color:rgb(243,244,246);padding:2rem;margin-top:1rem;border-radius:0.5rem&quot;&gt;
+&lt;div style=&quot;display:flex;flex-direction:column;gap:0.75rem&quot;&gt;
+&lt;div style=&quot;display:flex&quot;&gt;
+&lt;div class=&quot;text-title&quot;&gt;故障标题&lt;/div&gt;
+&lt;div class=&quot;text-content&quot;&gt;{{.Title}}&lt;/div&gt;
+&lt;/div&gt;
+&lt;div style=&quot;display:flex&quot;&gt;
+&lt;div class=&quot;text-title&quot;&gt;严重程度&lt;/div&gt;
+&lt;div class=&quot;text-{{.IncidentSeverity}}&quot;&gt;{{.IncidentSeverity}}&lt;/div&gt;
+&lt;/div&gt;
+&lt;div style=&quot;display:flex&quot;&gt;
+&lt;div class=&quot;text-title&quot;&gt;协作空间&lt;/div&gt;
+&lt;div class=&quot;text-content&quot;&gt;{{if .ChannelName}}{{.ChannelName}}{{else}}无{{end}}&lt;/div&gt;
+&lt;/div&gt;
+&lt;div style=&quot;display:flex&quot;&gt;
+&lt;div class=&quot;text-title&quot;&gt;触发时间&lt;/div&gt;
+&lt;div class=&quot;text-content&quot;&gt;{{date &quot;2006-01-02 15:04:05&quot; .StartTime}}&lt;/div&gt;
+&lt;/div&gt;
+{{if .CreatorID}}
+&lt;div style=&quot;display:flex&quot;&gt;
+&lt;div class=&quot;text-title&quot;&gt;发起人员&lt;/div&gt;
+&lt;div class=&quot;text-content&quot;&gt;{{.Creator.PersonName}}&lt;/div&gt;
+&lt;/div&gt;
+{{end}}
+{{if gt (len .Responders) 0}}
+&lt;div style=&quot;display:flex&quot;&gt;
+&lt;div class=&quot;text-title&quot;&gt;分派人员&lt;/div&gt;
+&lt;div class=&quot;text-content&quot;&gt;{{range .Responders}}@{{.PersonName}} {{end}}&lt;/div&gt;
+&lt;/div&gt;
+{{end}}
+&lt;div style=&quot;display:flex&quot;&gt;
+&lt;div class=&quot;text-title&quot;&gt;处理进度&lt;/div&gt;
+&lt;div class=&quot;text-content&quot;&gt;{{.Progress}}&lt;/div&gt;
+&lt;/div&gt;
+&lt;div style=&quot;display:flex&quot;&gt;
+&lt;div class=&quot;text-title&quot;&gt;故障描述&lt;/div&gt;
+&lt;div style=&quot;color:rgb(55,65,81);margin-top:0.125rem&quot;&gt;
+&lt;div data-id=&quot;react-email-markdown&quot;&gt;{{toHtml .Description}}&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+{{if .Labels.resource}}
+&lt;div style=&quot;display:flex;margin-bottom:0.5rem;&quot;&gt;
+&lt;div style=&quot;color:#000;font-weight:500;width:6rem;margin-right:1rem;&quot;&gt;告警对象&lt;/div&gt;
+&lt;div style=&quot;color:rgb(55,65,81);margin-top:0.125rem&quot;&gt;
+&lt;div data-id=&quot;react-email-markdown&quot;&gt;{{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+{{end}}
+&lt;/div&gt;
+&lt;div style=&quot;display:flex;gap:1rem;margin-top:2rem&quot;&gt;&lt;a href=&quot;{{.DetailUrl}}?ack=1&quot; data-id=&quot;react-email-button&quot; target=&quot;_blank&quot; style=&quot;line-height:100%;text-decoration:none;display:inline-block;max-width:100%;padding:0px 0px&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span style=&quot;max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:0&quot;&gt;&lt;div style=&quot;padding-left:2rem;padding-right:2rem;padding-top:0.5rem;padding-bottom:0.5rem;background-color:rgb(108,83,177);border-radius:0.25rem;font-size:1rem;line-height:1.5rem;color:rgb(255,255,255);font-weight:600;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms&quot;&gt;立即认领&lt;/div&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/a&gt;&lt;a href=&quot;{{.DetailUrl}}&quot; data-id=&quot;react-email-button&quot; target=&quot;_blank&quot; style=&quot;color:#61dafb;line-height:100%;text-decoration:none;display:inline-block;max-width:100%;padding:0px 0px&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span style=&quot;max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:0&quot;&gt;&lt;div style=&quot;padding-left:2rem;padding-right:2rem;padding-top:0.5rem;padding-bottom:0.5rem;background-color:rgb(255,255,255);border-width: 1px;border-style:solid;border-color:rgb(229,231,235);border-radius:0.25rem;font-size:1rem;line-height:1.5rem;color:rgb(0,0,0);font-weight:600&quot;&gt;查看详情&lt;/div&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/a&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div style=&quot;display:flex;justify-content:flex-end;align-items:flex-end;margin-top:2rem&quot;&gt;
+&lt;div style=&quot;font-size:0.875rem;line-height:1.25rem;font-weight:500&quot;&gt;ALL RIGHTS RESERVED © 北京快猫星云科技有限公司&lt;/div&gt;
+&lt;/div&gt;
+&lt;/body&gt;
+
+&lt;/html&gt;
+</code></pre><p>如下图所示：</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/7.avif" alt="drawing" style="display: block; margin: 0 auto;" width="500"/></article><nav><a href="/">doc.flashduty.com</a><a href="/zh/flashduty">FlashDuty : 一站式告警响应平台</a></nav><footer><div id="Ft"><b><a class="site" href="//flashcat.cloud"></a><b>© 快猫星云</b><b>文档由<a class="a" href="https://i18n.site">i18n.site</a>构建</b></b><b><a href="//github.com/flashcatcloud">&#xe64c;</a></b></div></footer></main>

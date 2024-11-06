@@ -1,0 +1,51 @@
+<!doctypehtml><meta charset=UTF-8><link rel="alternate" type="application/rss+xml" hreflang="zh" href="/zh.rss"><link rel=stylesheet href=//registry.npmmirror.com/18x/latest/files/_.css><script src=//registry.npmmirror.com/18x/latest/files/seo.js></script><link rel=alternate href="https://doc.flashduty.com/flashduty/mixin/alert_integration/pagerduty" hreflang=x-default><link rel=stylesheet href=//registry.npmmirror.com/18x/latest/files/seo.css><link rel=alternate hreflang=en href="https://doc.flashduty.com/en/flashduty/mixin/alert_integration/pagerduty.htm"><link rel=alternate hreflang=zh href="https://doc.flashduty.com/zh/flashduty/mixin/alert_integration/pagerduty.htm"><title>PagerDuty集成</title><main><article><hr /><h2>brief: 可以通过 PagerDuty 协议推送告警事件到快猫星云，实现告警事件自动化降噪处理</h2><h1>PagerDuty集成</h1><p>通过 webhook 的方式同步</p><p>Flashduty 实现了 PagerDuty Events API，输入和响应完全兼容。因此您可以通过 PagerDuty 协议推送告警事件到 Flashduty，实现告警事件自动化降噪处理。</p><p>同样的，对于已经支持推送事件到 PagerDuty 的告警系统（如 ElastAlert），你仅需要修改目的推送地址，即可利用 PagerDuty 协议推送事件到 Flashduty 。</p><h2>在 Flashduty</h2><p>您可通过以下2种方式，获取一个集成推送地址，任选其一即可。</p><h3>使用专属集成</h3><p>当您不需要将告警事件路由到不同的协作空间，优先选择此方式，更简单。</p><p>|+| 展开</p><pre><code>1. 进入 Flashduty 控制台，选择 **协作空间**，进入某个空间的详情页面
+2. 选择 **集成数据** tab，点击 **添加一个集成**，进入添加集成页面
+3. 选择 **PagerDuty** 集成，点击 **保存**，生成卡片。
+4. 点击生成的卡片，可以查看到 **推送地址**，复制备用，完成。
+</code></pre><h3>使用共享集成</h3><p>当您需要根据告警事件的 Payload 信息，将告警路由到不同的协作空间，优先选择此方式。</p><p>|+| 展开</p><pre><code>1. 进入 Flashduty 控制台，选择 **集成中心=&gt;告警事件**，进入集成选择页面。
+2. 选择 **PagerDuty** 集成：
+- **集成名称**：为当前集成定义一个名称。
+3. 点击 **保存** 后，复制当前页面的新生成的 **推送地址** 备用。
+4. 点击 **创建路由**，为集成配置路由规则。您可以按条件匹配不同的告警到不同的协作空间，也可以直接设置默认协作空间作为兜底，后续再按需调整。
+5. 完成。
+</code></pre><h2>在 PagerDuty</h2><h3>请求地址</h3><pre><code>{api_host}/event/push/alert/pagerduty
+</code></pre><p>该地址同时支持 PagerDuty V1 和 V2 Events API。<strong>您必须修改 PagerDuty 地址为该地址。</strong></p><h3>Pagerduty V2 Events</h3><h4>参考文档：</h4><p><a href="https://developer.pagerduty.com/api-reference/368ae3d938c9e-send-an-event-to-pager-duty">PagerDuty V2 Events</a></p><h4>鉴权方式：</h4><p>两种方式任选其一：</p><ul><li>方式 1：在 QueryString 中包含参数 integration_key</li><li>方式 2：将 integration_key 作为 routing_key 参数传入 Payload</li></ul><h3>Pagerduty V1 Events</h3><h4>参考文档：</h4><p><a href="https://developer.pagerduty.com/api-reference/f0037990796c8-send-an-event-to-pager-duty">PagerDuty V1 Events</a></p><h4>鉴权方式：</h4><p>两种方式任选其一：</p><ul><li>方式 1：在 QueryString 中包含参数 integration_key</li><li>方式 2：将 integration_key 作为 service_key 参数传入 Payload</li></ul><h3>配置示例</h3><p>以 <a href="https://github.com/jertel/elastalert2">ElastAlert2</a> 为例:</p><ol><li>步骤 1：获得推送地址</li></ol><p>在当前页面填写集成名称并保存，重新打开集成详情，复制推送地址，如：</p><pre><code>{api_host}/event/push/alert/pagerduty?integration_key=xxx
+</code></pre><ol start="2"><li>步骤 2：修改推送地址</li></ol><p>修改已经部署好的 ElastAlert 实例对应源码，<a href="https://github.com/jertel/elastalert2/commit/e815a62a6b1eecef6e1fef13afd99d905b67fc34">查看 diff </a>：</p><img alt="drawing" width="600" src="https://fcimg.3ti.site/zh/flashduty/mixin/alert_integration/pagerduty/1.avif" /><ol start="3"><li>步骤 3：上报告警事件</li></ol><p>遵循 <a href="https://elastalert2.readthedocs.io/en/latest/ruletypes.html#pagerduty">ElastAlert PagerDuty 推送配置文档</a> 步骤，配置告警：</p><pre><code>name: &quot;b&quot;
+type: &quot;frequency&quot;
+index: &quot;pgy_audit*&quot;
+is_enabled: true
+num_events: 1
+realert:
+minutes: 1
+terms_size: 50
+scan_entire_timeframe: true
+timeframe:
+minutes: 60
+timestamp_field: &quot;created_at&quot;
+timestamp_type: &quot;unix_ms&quot;
+use_strftime_index: false
+alert_subject: &quot;Test {0} 123 aa☃ {1}&quot;
+alert_subject_args:
+- &quot;account_id&quot;
+- &quot;operation&quot;
+alert_text: &quot;Test {0}  123 bb☃ {1}&quot;
+alert_text_args:
+- &quot;request_id&quot;
+- &quot;operation_name&quot;
+filter:
+- query:
+query_string:
+query: &quot;created_at:*&quot;
+
+# ------- FlashDuty ----------------
+alert: pagerduty
+pagerduty_service_key: xxx
+pagerduty_client_name: wahaha
+pagerduty_api_version: v2
+pagerduty_v2_payload_class: ping failure
+pagerduty_v2_payload_component: mysql
+pagerduty_v2_payload_group: app-stack
+pagerduty_v2_payload_severity: error
+pagerduty_v2_payload_source: mysql.host.name
+# ------- FlashDuty ----------------
+</code></pre><ol start="4"><li>步骤 4：重启 ElastAlert，等待告警触发</li></ol></article><nav><a href="/">doc.flashduty.com</a><a href="/zh/flashduty">FlashDuty : 一站式告警响应平台</a></nav><footer><div id="Ft"><b><a class="site" href="//flashcat.cloud"></a><b>© 快猫星云</b><b>文档由<a class="a" href="https://i18n.site">i18n.site</a>构建</b></b><b><a href="//github.com/flashcatcloud">&#xe64c;</a></b></div></footer></main>

@@ -1,0 +1,13 @@
+<!doctypehtml><meta charset=UTF-8><link rel="alternate" type="application/rss+xml" hreflang="zh" href="/zh.rss"><link rel=stylesheet href=//registry.npmmirror.com/18x/latest/files/_.css><script src=//registry.npmmirror.com/18x/latest/files/seo.js></script><link rel=alternate href="https://doc.flashduty.com/flashduty/mixin/change_integration/custom_change" hreflang=x-default><link rel=stylesheet href=//registry.npmmirror.com/18x/latest/files/seo.css><link rel=alternate hreflang=en href="https://doc.flashduty.com/en/flashduty/mixin/change_integration/custom_change.htm"><link rel=alternate hreflang=zh href="https://doc.flashduty.com/zh/flashduty/mixin/change_integration/custom_change.htm"><title>自定义变更事件集成指引</title><main><article><hr /><h2>brief: 通过标准协议推送自有系统变更事件到 Flashduty，大部分故障由变更导致，变更和告警事件联动有助于快速定位故障原因。</h2><h1>自定义变更事件集成指引</h1><p>通过标准协议推送自有系统变更事件到 Flashduty，大部分故障由变更导致，变更和告警事件联动有助于快速定位故障原因。</p><blockquote><p>[!NOTE]
+Flashduty 已经适配部分常用工单、部署系统的 webhook 协议，对于这些系统您应该首先使用对应的集成，更加简单方便。本集成提供了一个标准的 HTTP 接口，需要允许您开发适配。好处是您可以与任何部署系统集成。</p></blockquote><h2>操作步骤</h2><h3>在 Flashduty</h3><ol><li>进入 Flashduty 控制台，选择 <strong>集成中心=&gt;变更事件</strong>，进入集成选择页面。</li><li>选择 <strong>自定义事件</strong> 集成：</li></ol><ul><li><strong>集成名称</strong>：为当前集成定义一个名称。</li></ul><ol start="3"><li>点击 <strong>保存</strong> 后，复制当前页面的新生成的 <strong>推送地址</strong> 备用。</li><li>完成。</li></ol><h2>实现协议</h2><p>请您参照 <a href="https://developer.flashcat.cloud/zh/flashduty/custom-change">开发文档</a> 完成协议开发。</p><h2>最佳实践</h2><p>标签是事件的描述，应尽量丰富标签内容，比如：</p><ol><li>变更的应用范围，如 host，cluster 等</li><li>变更的归属信息，如 team，owner 等</li></ol><h2>常见问题</h2><p>|+| 为什么在Flashduty没有收到变更？</p><pre><code>#### 在 Flashduty
+
+1. 查看集成是否展示了 **最新事件时间**？如果没有，代表Flashduty没有收到推送，直接优先排查夜莺部分。
+
+#### 在您的系统
+
+1. 确认您请求的地址，和集成详情中的地址完全一致。
+2. 确认您的服务可以访问外网 api.flashcat.cloud 域名。如果不可以，您首先需要为 server 开通外网，或单独针对 Flashduty 的域名开通外网访问。
+3. 打印 Flashduty 服务的响应结果，查看是否有明确信息。
+
+如果以上步骤执行之后，仍然没有查询到问题根因，请 **携带请求响应中的 request_id** 联系我们。
+</code></pre></article><nav><a href="/">doc.flashduty.com</a><a href="/zh/flashduty">FlashDuty : 一站式告警响应平台</a></nav><footer><div id="Ft"><b><a class="site" href="//flashcat.cloud"></a><b>© 快猫星云</b><b>文档由<a class="a" href="https://i18n.site">i18n.site</a>构建</b></b><b><a href="//github.com/flashcatcloud">&#xe64c;</a></b></div></footer></main>
