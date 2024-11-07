@@ -89,7 +89,7 @@ Resolution | string | 否 | 故障解决办法，故障关闭后填写</p><p><sp
 {{if .Labels.resource}}**resource** : {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
 {{range $k, $v := .Labels}}
 {{if not (in $k &quot;resource&quot; &quot;body_text&quot;)}}**{{$k}}** : {{toHtml $v}}{{end}}{{end}}
-</code></pre><p>如下图所示：</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/1.avif" alt="drawing" style="display: block; margin: 0 auto;" width="500"/><p>如果您期望仅展示关键标签信息，可以参照下边的代码段：</p><ul><li>我们列出了一些常见标签，您可自行删减；</li><li>在飞书应用中，系统会自动帮您删除（因标签不存在导致的）渲染空行，您可放心配置</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}resource: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+</code></pre><p>如下图所示：</p><img src="https://fc.3ti.site/zh/flashduty/conf/template/1.avif" alt="drawing" style="display: block; margin: 0 auto;" width="500"/><p>如果您期望仅展示关键标签信息，可以参照下边的代码段：</p><ul><li>我们列出了一些常见标签，您可自行删减；</li><li>在飞书应用中，系统会自动帮您删除（因标签不存在导致的）渲染空行，您可放心配置</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}resource: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
 {{if (index .Labels &quot;check&quot;)}}check: {{toHtml (index .Labels &quot;check&quot;)}}{{end}}
 {{if (index .Labels &quot;metric&quot;)}}metric: {{index .Labels &quot;metric&quot;}}{{end}}
 {{if (index .Labels &quot;prom_ql&quot;)}}prom_ql: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
@@ -113,7 +113,7 @@ Resolution | string | 否 | 故障解决办法，故障关闭后填写</p><p><sp
 {{if .Labels.resource}}**resource** : {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
 {{range $k, $v := .Labels}}
 {{if not (in $k &quot;resource&quot; &quot;body_text&quot;)}}**{{$k}}** : {{toHtml $v}}{{end}}{{end}}
-</code></pre><p>如下图所示：</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/2.avif" alt="drawing" style="display: block; margin: 0 auto;" width="500"/><p>如果您期望仅展示关键标签信息，可以参照下边的代码段：</p><ul><li>我们列出了一些常见标签，您可自行删减；</li><li>在钉钉应用中，系统会自动帮您删除（因标签不存在导致的）渲染空行，您可放心配置</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}**resource**: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+</code></pre><p>如下图所示：</p><img src="https://fc.3ti.site/zh/flashduty/conf/template/2.avif" alt="drawing" style="display: block; margin: 0 auto;" width="500"/><p>如果您期望仅展示关键标签信息，可以参照下边的代码段：</p><ul><li>我们列出了一些常见标签，您可自行删减；</li><li>在钉钉应用中，系统会自动帮您删除（因标签不存在导致的）渲染空行，您可放心配置</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}**resource**: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
 {{if (index .Labels &quot;metric&quot;)}}**metric**: {{index .Labels &quot;metric&quot;}}{{end}}
 {{if (index .Labels &quot;prom_ql&quot;)}}**prom_ql**: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
 {{if (index .Labels &quot;trigger_value&quot;)}}**trigger_value**: {{index .Labels &quot;trigger_value&quot;}}{{end}}
@@ -151,11 +151,11 @@ Resolution | string | 否 | 故障解决办法，故障关闭后填写</p><p><sp
 {{if (index .Labels &quot;name&quot;)}}name: {{index .Labels &quot;name&quot;}}{{end}}
 {{if (index .Labels &quot;mode&quot;)}}mode: {{index .Labels &quot;mode&quot;}}{{end}}
 {{if (index .Labels &quot;runbook_url&quot;)}}runbook_url: {{toHtml (index .Labels &quot;runbook_url&quot;)}}{{end}}
-</code></pre><p>如下图所示：</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/3.avif" alt="drawing" style="display: block; margin: 0 auto;" width="500"/><p><strong>注意，企业微信限制了卡片长度，在模板渲染区域，您最多可以渲染不超过 8 行内容，超过 8 行的部分将被隐藏</strong></p><h2>Slack 应用</h2><p>您需要预先配置 <strong>集成中心-即时消息- Slack</strong> 集成，才能发送消息卡片。如果不设置自定义内容，将采用系统默认模板，仅渲染常见标签信息：</p><pre><code>{{if .Description}}*description* :{{toHtml .Labels.body_text .Description}}{{end}}
+</code></pre><p>如下图所示：</p><img src="https://fc.3ti.site/zh/flashduty/conf/template/3.avif" alt="drawing" style="display: block; margin: 0 auto;" width="500"/><p><strong>注意，企业微信限制了卡片长度，在模板渲染区域，您最多可以渲染不超过 8 行内容，超过 8 行的部分将被隐藏</strong></p><h2>Slack 应用</h2><p>您需要预先配置 <strong>集成中心-即时消息- Slack</strong> 集成，才能发送消息卡片。如果不设置自定义内容，将采用系统默认模板，仅渲染常见标签信息：</p><pre><code>{{if .Description}}*description* :{{toHtml .Labels.body_text .Description}}{{end}}
 {{if .Labels.resource}}*resource* : {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
 {{range $k, $v := .Labels}}
 {{if not (in $k &quot;resource&quot; &quot;body_text&quot;)}}*{{$k}}* : {{toHtml $v}}{{end}}{{end}}
-</code></pre><p>如下图所示：</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/4.avif" alt="drawing" style="display: block; margin: 0 auto;" width="600"/><p>如果您期望仅展示关键标签信息，可以参照下边的代码段：</p><ul><li>我们列出了一些常见标签，您可自行删减；</li><li>消息可以发送长度为15000左右字符，超出后截断发送；</li><li>在 Slack 应用中，系统会自动帮您删除（因标签不存在导致的）渲染空行，您可放心配置</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}*resource*: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+</code></pre><p>如下图所示：</p><img src="https://fc.3ti.site/zh/flashduty/conf/template/4.avif" alt="drawing" style="display: block; margin: 0 auto;" width="600"/><p>如果您期望仅展示关键标签信息，可以参照下边的代码段：</p><ul><li>我们列出了一些常见标签，您可自行删减；</li><li>消息可以发送长度为15000左右字符，超出后截断发送；</li><li>在 Slack 应用中，系统会自动帮您删除（因标签不存在导致的）渲染空行，您可放心配置</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}*resource*: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
 {{if (index .Labels &quot;metric&quot;)}}*metric*: {{index .Labels &quot;metric&quot;}}{{end}}
 {{if (index .Labels &quot;prom_ql&quot;)}}*prom_ql*: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
 {{if (index .Labels &quot;trigger_value&quot;)}}*trigger_value*: {{index .Labels &quot;trigger_value&quot;}}{{end}}
@@ -178,7 +178,7 @@ Resolution | string | 否 | 故障解决办法，故障关闭后填写</p><p><sp
 {{if .Labels.resource}}**resource** : {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
 {{range $k, $v := .Labels}}
 {{if not (in $k &quot;resource&quot; &quot;body_text&quot; &quot;body_text_with_table&quot;)}}**{{$k}}** : {{toHtml $v}}{{end}}{{end}}
-</code></pre><p>如下图所示：</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/5.avif" alt="drawing" style="display: block; margin: 0 auto;" width="300"/><p>如果您期望仅展示关键标签信息，可以参照下边的代码段：</p><ul><li>我们列出了一些常见标签，您可自行删减；</li><li>消息可以发送长度为 28KB 左右字节，超出后报错；</li><li>在 Microsoft Teams 应用中，系统会自动帮您删除（因标签不存在导致的）渲染空行，您可放心配置</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}**resource**: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+</code></pre><p>如下图所示：</p><img src="https://fc.3ti.site/zh/flashduty/conf/template/5.avif" alt="drawing" style="display: block; margin: 0 auto;" width="300"/><p>如果您期望仅展示关键标签信息，可以参照下边的代码段：</p><ul><li>我们列出了一些常见标签，您可自行删减；</li><li>消息可以发送长度为 28KB 左右字节，超出后报错；</li><li>在 Microsoft Teams 应用中，系统会自动帮您删除（因标签不存在导致的）渲染空行，您可放心配置</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}**resource**: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
 {{if (index .Labels &quot;metric&quot;)}}**metric**: {{index .Labels &quot;metric&quot;}}{{end}}
 {{if (index .Labels &quot;prom_ql&quot;)}}**prom_ql**: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
 {{if (index .Labels &quot;trigger_value&quot;)}}**trigger_value**: {{index .Labels &quot;trigger_value&quot;}}{{end}}
@@ -201,7 +201,7 @@ Resolution | string | 否 | 故障解决办法，故障关闭后填写</p><p><sp
 {{if .Labels.resource}}**resource** : {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
 {{range $k, $v := .Labels}}
 {{if not (in $k &quot;resource&quot; &quot;body_text&quot; &quot;body_text_with_table&quot;)}}**{{$k}}** : {{toHtml $v}}{{end}}{{end}}
-</code></pre><p>如下图所示：</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/5.avif" alt="drawing" style="display: block; margin: 0 auto;" width="300"/><p>如果您期望仅展示关键标签信息，可以参照下边的代码段：</p><ul><li>我们列出了一些常见标签，您可自行删减；</li><li>消息可以发送长度为 28KB 左右字节，超出后报错；</li><li>在 Microsoft Teams 应用中，系统会自动帮您删除（因标签不存在导致的）渲染空行，您可放心配置</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}**resource**: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
+</code></pre><p>如下图所示：</p><img src="https://fc.3ti.site/zh/flashduty/conf/template/5.avif" alt="drawing" style="display: block; margin: 0 auto;" width="300"/><p>如果您期望仅展示关键标签信息，可以参照下边的代码段：</p><ul><li>我们列出了一些常见标签，您可自行删减；</li><li>消息可以发送长度为 28KB 左右字节，超出后报错；</li><li>在 Microsoft Teams 应用中，系统会自动帮您删除（因标签不存在导致的）渲染空行，您可放心配置</li></ul><pre><code class="language-i18n">{{if (index .Labels &quot;resource&quot;)}}**resource**: {{toHtml (joinAlertLabels . &quot;resource&quot; &quot;, &quot;)}}{{end}}
 {{if (index .Labels &quot;metric&quot;)}}**metric**: {{index .Labels &quot;metric&quot;}}{{end}}
 {{if (index .Labels &quot;prom_ql&quot;)}}**prom_ql**: {{toHtml (index .Labels &quot;prom_ql&quot;)}}{{end}}
 {{if (index .Labels &quot;trigger_value&quot;)}}**trigger_value**: {{index .Labels &quot;trigger_value&quot;}}{{end}}
@@ -389,7 +389,7 @@ Resolution | string | 否 | 故障解决办法，故障关闭后填写</p><p><sp
 &lt;body data-id=&quot;__react-email-body&quot; style=&quot;background-color:rgb(255,255,255);border-radius:0.25rem;margin-top:2.5rem;margin-bottom:2.5rem;margin-left:auto;margin-right:auto;padding:1rem;min-width:400px;max-width:660px;font-family:ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji&quot;&gt;
 &lt;div style=&quot;width:100%;height:0.375rem;margin-bottom:2rem&quot; class=&quot;bg-{{.IncidentSeverity}}&quot;&gt;&lt;/div&gt;
 &lt;div style=&quot;display:flex;align-items:center;margin-bottom:1.5rem&quot;&gt;
-&lt;div style=&quot;display:flex;align-items:flex-end;gap:1rem&quot;&gt;&lt;img witdh=&quot;120&quot; data-id=&quot;react-email-img&quot; src=&quot;https://fcimg.3ti.site/zh/flashduty/conf/template/6.avif&quot; height=&quot;40&quot; style=&quot;display:block;outline:none;border:none;text-decoration:none&quot; /&gt;&lt;span style=&quot;font-size:1.25rem;line-height:1.75rem;font-weight:600&quot;&gt;您有故障待处理&lt;/span&gt;&lt;/div&gt;
+&lt;div style=&quot;display:flex;align-items:flex-end;gap:1rem&quot;&gt;&lt;img witdh=&quot;120&quot; data-id=&quot;react-email-img&quot; src=&quot;https://fc.3ti.site/zh/flashduty/conf/template/6.avif&quot; height=&quot;40&quot; style=&quot;display:block;outline:none;border:none;text-decoration:none&quot; /&gt;&lt;span style=&quot;font-size:1.25rem;line-height:1.75rem;font-weight:600&quot;&gt;您有故障待处理&lt;/span&gt;&lt;/div&gt;
 &lt;/div&gt;
 &lt;div style=&quot;background-color:rgb(243,244,246);padding:2rem;margin-top:1rem;border-radius:0.5rem&quot;&gt;
 &lt;div style=&quot;display:flex;flex-direction:column;gap:0.75rem&quot;&gt;
@@ -448,4 +448,4 @@ Resolution | string | 否 | 故障解决办法，故障关闭后填写</p><p><sp
 &lt;/body&gt;
 
 &lt;/html&gt;
-</code></pre><p>如下图所示：</p><img src="https://fcimg.3ti.site/zh/flashduty/conf/template/7.avif" alt="drawing" style="display: block; margin: 0 auto;" width="500"/></article><nav><a href="/">doc.flashduty.com</a><a href="/zh/flashduty">FlashDuty : 一站式告警响应平台</a></nav><footer><div id="Ft"><b><a class="site" href="//flashcat.cloud"></a><b>© 快猫星云</b><b>文档由<a class="a" href="https://i18n.site">i18n.site</a>构建</b></b><b><a href="//github.com/flashcatcloud">&#xe64c;</a></b></div></footer></main>
+</code></pre><p>如下图所示：</p><img src="https://fc.3ti.site/zh/flashduty/conf/template/7.avif" alt="drawing" style="display: block; margin: 0 auto;" width="500"/></article><nav><a href="/">doc.flashduty.com</a><a href="/zh/flashduty">FlashDuty : 一站式告警响应平台</a></nav><footer><div id="Ft"><b><a class="site" href="//flashcat.cloud"></a><b>© 快猫星云</b><b>文档由<a class="a" href="https://i18n.site">i18n.site</a>构建</b></b><b><a href="//github.com/flashcatcloud">&#xe64c;</a></b></div></footer></main>

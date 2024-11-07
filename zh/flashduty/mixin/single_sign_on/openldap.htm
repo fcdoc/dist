@@ -51,7 +51,7 @@ password 替换成想要设置的密码</p></blockquote><h2>服务启动</h2><p>
 使用以下命令查看服务的状态：</p><pre><code>docker-compose ps
 </code></pre><p>停止服务：
 当你想要停止服务时，可以使用以下命令：</p><pre><code>docker-compose down
-</code></pre><h2>登录OpenLDAP</h2><p>在浏览器中访问 <a href="http://ip:8088/">http://ip:8088/</a> , 使用用户名 cn=admin,dc=flashduty,dc=com 和 密码 xxx 登录。</p><h2>OpenLDAP 配置</h2><h3>添加组和用户</h3><p><img src="https://fcimg.3ti.site/zh/flashduty/mixin/single_sign_on/openldap/1.avif" alt="" /></p><blockquote><p>[!NOTE]
+</code></pre><h2>登录OpenLDAP</h2><p>在浏览器中访问 <a href="http://ip:8088/">http://ip:8088/</a> , 使用用户名 cn=admin,dc=flashduty,dc=com 和 密码 xxx 登录。</p><h2>OpenLDAP 配置</h2><h3>添加组和用户</h3><p><img src="https://fc.3ti.site/zh/flashduty/mixin/single_sign_on/openldap/1.avif" alt="" /></p><blockquote><p>[!NOTE]
 在 <strong>用户路径</strong> (例如上图 ou=people 下的  cn=falsh duty) -&gt; <code>Add new attribute</code> -&gt; 选择 <code>Email</code> , 为用户添加 Email 属性，若已经存在请忽略。</p></blockquote><h2>FlashDuty 集成</h2><p>结合上述OpenLDAP配置，FlashDuty集成信息如下图所示：
-<img src="https://fcimg.3ti.site/zh/flashduty/mixin/single_sign_on/openldap/2.avif" alt="" /></p><blockquote><p>[!NOTE]
+<img src="https://fc.3ti.site/zh/flashduty/mixin/single_sign_on/openldap/2.avif" alt="" /></p><blockquote><p>[!NOTE]
 上述字段的含义与描述请参考 <a href="/feature/single_sign_on">配置单点登录</a></p></blockquote></article><nav><a href="/">doc.flashduty.com</a><a href="/zh/flashduty">FlashDuty : 一站式告警响应平台</a></nav><footer><div id="Ft"><b><a class="site" href="//flashcat.cloud"></a><b>© 快猫星云</b><b>文档由<a class="a" href="https://i18n.site">i18n.site</a>构建</b></b><b><a href="//github.com/flashcatcloud">&#xe64c;</a></b></div></footer></main>
